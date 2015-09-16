@@ -95,8 +95,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             }
         });
 
-        final AIConfiguration config = new AIConfiguration("CLIENT_ACCESS_TOKEN",
-                "SUBSCRIPTION_KEY",
+        final AIConfiguration config = new AIConfiguration("CLIENT_ACCESS_TOKEN_FAIL",
+                "SUBSCRIPTION_KEY_FAIL",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
     }
@@ -198,6 +198,20 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     public void onSendClickListener(View v) {
 
         String comment = getComment();
+        String userinput = getUserInput();
+
+        if (userinput != null) {
+            botAdapter.addItem(userinput);
+            botAdapter.setAnimationsLocked(false);
+            botAdapter.setDelayEnterAnimation(false);
+
+            if (rvComments.getChildCount() > 0) {
+                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
+            }
+
+            etComment.setText(null);
+            btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
+        }
 
         if (comment != null) {
             botAdapter.addItem(comment);
@@ -233,6 +247,17 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         return comment;
     }
 
+    private String getUserInput() {
+
+        String userInput = etComment.getText().toString();
+        if (TextUtils.isEmpty(userInput)) {
+            btnSendComment.startAnimation(AnimationUtils.loadAnimation(this, R.anim.shake_error));
+            return null;
+        }
+
+
+        return userInput;
+    }
     /**
      * Receiving speech input
      */
@@ -281,6 +306,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                 System.out.println("Query:" + result.getResolvedQuery() +
                         "\nAction: " + result.getAction() +
                         "\nParameters: " + parameterString);
+
             }
         });
     }

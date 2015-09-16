@@ -18,6 +18,9 @@ public class DialogManager {
     private static final String CLIENT_ACCESS_TOKEN = "38ecf01bfbd74b9a92ae6569932e4db6";
     private static final String SUBSCRIPTION_KEY = "0a802526-a4bf-4eb2-b03e-2b81f2061121";
 
+    private static final String CLIENT_ACCESS_TOKEN_FAIL = "8d055613884d4b49acb6726195b78968";
+    private static final String SUBSCRIPTION_KEY_FAIL = "dc39a5a2-0ab8-4ac4-bb7b-67099d8c6064";
+
 
     //
     private AIService aiService;
@@ -29,8 +32,8 @@ public class DialogManager {
     public DialogManager(Context context, AIListener listener) {
 
         //
-        final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN,
-                SUBSCRIPTION_KEY,
+        final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN_FAIL,
+                SUBSCRIPTION_KEY_FAIL,
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
 
@@ -57,10 +60,12 @@ public class DialogManager {
         try {
             AIResponse response = aiService.textRequest(input, new RequestExtras());
 
+
             if (response.getResult().getAction().equals("ask_wolfram")) {
                 return wolframAlphaAPI.sendRequest(response.getResult().getStringParameter("text"));
             } else {
-                return response.getResult().getResolvedQuery();
+                //return response.getResult().getResolvedQuery();
+                return response.getResult().getFulfillment().getSpeech();
             }
 
         } catch (Exception e) {
