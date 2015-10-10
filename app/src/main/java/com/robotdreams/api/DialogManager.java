@@ -7,6 +7,7 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Handler;
 
 
 import ai.api.AIConfiguration;
@@ -41,10 +42,11 @@ public class DialogManager {
     private AIService currentaiService;
 
     //
-    //
     private MediaPlayer audioPlayer;
+    //
     private Context context;
-
+    //
+    private Handler messageHandler;
 
     //
     private WolframAlphaAPI wolframAlphaAPI;
@@ -53,7 +55,7 @@ public class DialogManager {
     private int Mood;
 
 
-    public DialogManager(Context context, AIListener listener) {
+    public DialogManager(Context context, AIListener listener, Handler messageHandler) {
 
         // let's try two agents
         final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN_FAIL,
@@ -71,11 +73,12 @@ public class DialogManager {
         aiService_PodCast = AIService.getService(context, configPodcast);
         aiService_PodCast.setListener(listener);
         currentaiService = aiService_PodCast;
-        this.context = context;
-
-        Mood = MOOD_HAPPY;
 
         wolframAlphaAPI = new WolframAlphaAPI();
+
+        this.context = context;
+        this.messageHandler = messageHandler;
+        Mood = MOOD_HAPPY;
     }
 
 

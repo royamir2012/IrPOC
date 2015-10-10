@@ -14,6 +14,7 @@ import java.io.IOException;
 /**
  * Created by assaf_000 on 10/10/2015.
  */
+
 public class CameraControl implements SurfaceHolder.Callback {
     Camera camera;
     volatile boolean running = false;
@@ -207,4 +208,3 @@ public class CameraControl implements SurfaceHolder.Callback {
         }
     }
 }
-

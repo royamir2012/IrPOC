@@ -87,7 +87,6 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     SurfaceView surfaceView;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -179,7 +178,6 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             }
         });
     }
-
     /**
      * Showing google speech input dialog
      */
@@ -249,16 +247,16 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         String userinput = getUserInput();
 
         if (userinput != null) {
-            appendComment(BotAdapter.Type.Voice, userinput);
 
+            appendComment(BotAdapter.Type.Voice, userinput);
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
 
         }
 
         if (comment != null) {
-            appendComment(BotAdapter.Type.Voice, comment);
 
+            appendComment(BotAdapter.Type.Voice, comment);
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
             if (comment.equals("Calling")) // let's try and open Skype...
@@ -438,5 +436,4 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
     }
-
 }
