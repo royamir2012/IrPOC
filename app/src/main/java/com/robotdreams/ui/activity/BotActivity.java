@@ -238,7 +238,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         String comment = getComment();
 
         if (comment != null) {
-            appendComment(comment);
+            appendComment(BotAdapter.Type.Voice, comment);
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
@@ -337,9 +337,9 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         // show sound level
     }
 
-    private void appendComment(String comment) {
+    private void appendComment(BotAdapter.Type type, String comment) {
 
-        botAdapter.addItem(comment);
+        botAdapter.addItem(type, comment);
         botAdapter.setAnimationsLocked(false);
         botAdapter.setDelayEnterAnimation(false);
 
@@ -351,7 +351,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
     public void onHandleMessage(Message msg) {
 
-        appendComment(msg.getData().getString("message"));
+        appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
     }
 
 }
