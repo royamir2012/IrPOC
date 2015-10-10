@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,10 @@ import butterknife.InjectView;
  */
 public class BotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    public enum Type {
+        Voice, Camera
+    }
+
     private Context context;
     private int lastAnimatedPosition = -1;
     private int avatarSize;
@@ -33,7 +38,7 @@ public class BotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private boolean animationsLocked = false;
     private boolean delayEnterAnimation = true;
 
-    private List<String> comments = new ArrayList<>();
+    private List<Pair<Type, String>> comments = new ArrayList<>();
 
     public BotAdapter(Context context) {
         this.context = context;
@@ -51,10 +56,12 @@ public class BotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         runEnterAnimation(viewHolder.itemView, position);
         CommentViewHolder holder = (CommentViewHolder) viewHolder;
 
-        holder.tvComment.setText(comments.get(position));
+        Pair<Type, String> comment = comments.get(position);
+
+        holder.tvComment.setText(comment.second);
 
         Picasso.with(context)
-                .load(R.drawable.ico_mic)
+                .load(comment.first == Type.Voice ? R.drawable.ico_mic : R.drawable.ico_camera)
                 .centerCrop()
                 .resize(avatarSize, avatarSize)
                 .transform(new RoundedTransformation())
@@ -92,9 +99,9 @@ public class BotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged();
     }
 
-    public void addItem(String comment) {
+    public void addItem(Type type, String comment) {
 
-        comments.add(comment);
+        comments.add(new Pair<>(type, comment));
         notifyItemInserted(comments.size() - 1);
     }
 

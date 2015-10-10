@@ -2,6 +2,7 @@ package com.robotdreams.api;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Handler;
 
 import ai.api.AIConfiguration;
 import ai.api.AIListener;
@@ -28,8 +29,14 @@ public class DialogManager {
     //
     private WolframAlphaAPI wolframAlphaAPI;
 
+    //
+    private Context context;
 
-    public DialogManager(Context context, AIListener listener) {
+    //
+    private Handler messageHandler;
+
+
+    public DialogManager(Context context, AIListener listener, Handler messageHandler) {
 
         //
         final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN_FAIL,
@@ -41,6 +48,9 @@ public class DialogManager {
         aiService.setListener(listener);
 
         wolframAlphaAPI = new WolframAlphaAPI();
+
+        this.context = context;
+        this.messageHandler = messageHandler;
     }
 
 

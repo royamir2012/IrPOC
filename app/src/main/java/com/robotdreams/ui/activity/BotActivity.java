@@ -5,11 +5,14 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
+import com.robotdreams.api.CameraControl;
 import com.robotdreams.api.DialogManager;
 import com.robotdreams.ui.adapter.BotAdapter;
 import com.robotdreams.ui.view.SendRequestButton;
@@ -57,12 +61,25 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     SendRequestButton btnSendComment;
     @InjectView(R.id.btnSpeak)
     ImageButton btnSpeak;
+    @InjectView(R.id.btnCamera)
+    ImageButton btnCamera;
 
     private TextToSpeech tts;
 
     private BotAdapter botAdapter;
     private int drawingStartLocation;
     private DialogManager dialogManager;
+    private CameraControl cameraControl;
+
+    private Handler messageHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            onHandleMessage(msg);
+        }
+    };
+
+
+    SurfaceView surfaceView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,9 +87,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setContentView(R.layout.activity_bot);
         setupComments();
         setupSpeakButton();
+        setupCameraButton();
         setupSendCommentButton();
 
-        dialogManager = new DialogManager(this, this);
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+
+        cameraControl = new CameraControl(messageHandler);
+        cameraControl.init(getApplicationContext(), surfaceView);
+
+        dialogManager = new DialogManager(this, this, messageHandler);
 
         drawingStartLocation = getIntent().getIntExtra(ARG_DRAWING_START_LOCATION, 0);
         if (savedInstanceState == null) {
@@ -99,6 +122,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                 "SUBSCRIPTION_KEY_FAIL",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void setupComments() {
@@ -129,6 +157,16 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             @Override
             public void onClick(View v) {
                 promptSpeechInput();
+            }
+        });
+    }
+
+    private void setupCameraButton() {
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                cameraControl.takePictures();
             }
         });
     }
@@ -214,13 +252,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         if (comment != null) {
-            botAdapter.addItem(comment);
-            botAdapter.setAnimationsLocked(false);
-            botAdapter.setDelayEnterAnimation(false);
-
-            if (rvComments.getChildCount() > 0) {
-                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
-            }
+            appendComment(BotAdapter.Type.Voice, comment);
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
@@ -330,4 +362,22 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     public void onAudioLevel(final float level) {
         // show sound level
     }
+
+    private void appendComment(BotAdapter.Type type, String comment) {
+
+        botAdapter.addItem(type, comment);
+        botAdapter.setAnimationsLocked(false);
+        botAdapter.setDelayEnterAnimation(false);
+
+        if (rvComments.getChildCount() > 0) {
+            rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
+        }
+
+    }
+
+    public void onHandleMessage(Message msg) {
+
+        appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+    }
+
 }
