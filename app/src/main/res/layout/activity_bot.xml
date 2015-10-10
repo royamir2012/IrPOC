@@ -12,12 +12,6 @@
         android:elevation="@dimen/default_elevation"
         android:orientation="vertical">
 
-        <SurfaceView
-            android:id="@+id/surfaceView"
-            android:layout_width="1dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -34,7 +28,24 @@
                 android:layout_height="4dp"
                 android:layout_gravity="bottom"
                 android:background="@drawable/shadow_top" />
-
+            <RadioGroup
+                    android:layout_width="101dp"
+                    android:layout_height="80dp" android:layout_gravity="right|top" android:gravity="left">
+                <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Happy"
+                        android:id="@+id/HappyradioButton" android:checked="true" android:layout_gravity="left"
+                        android:gravity="fill_horizontal|center_horizontal"
+                        android:onClick="onRadioButtonClicked"/>
+                <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sad"
+                        android:id="@+id/SadradioButton" android:checked="false"
+                        android:gravity="fill_horizontal|center_horizontal"
+                        android:layout_gravity="left" android:onClick="onRadioButtonClicked"/>
+            </RadioGroup>
         </FrameLayout>
 
         <LinearLayout
@@ -62,13 +73,6 @@
                 android:layout_height="42dp"
                 android:id="@+id/btnSpeak"
                 android:src="@drawable/ico_mic"
-                android:scaleType="centerCrop" />
-
-            <ImageButton
-                android:layout_width="44dp"
-                android:layout_height="42dp"
-                android:id="@+id/btnCamera"
-                android:src="@drawable/ico_camera"
                 android:scaleType="centerCrop" />
 
             <com.robotdreams.ui.view.SendRequestButton

@@ -1,18 +1,25 @@
 package com.robotdreams.api;
 
+import java.util.*;
+
+import ai.api.model.*;
 import android.content.Context;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
+
 
 import ai.api.AIConfiguration;
 import ai.api.AIListener;
 import ai.api.AIService;
 import ai.api.RequestExtras;
-import ai.api.model.AIResponse;
+import com.robotdreams.R;
+import com.robotdreams.ui.activity.BotActivity;
 
 /**
  *
  */
+
 public class DialogManager {
 
 
@@ -22,35 +29,53 @@ public class DialogManager {
     private static final String CLIENT_ACCESS_TOKEN_FAIL = "8d055613884d4b49acb6726195b78968";
     private static final String SUBSCRIPTION_KEY_FAIL = "dc39a5a2-0ab8-4ac4-bb7b-67099d8c6064";
 
+    private static final String CLIENT_ACCESS_TOKEN_PODCAST = "988545736d3c4b8c83dee67783abba4d";
+    private static final String SUBSCRIPTION_KEY_PODCAST = "dc39a5a2-0ab8-4ac4-bb7b-67099d8c6064";
+
+    private static final int MOOD_SAD = 1;
+    private static final int MOOD_HAPPY = 2;
 
     //
-    private AIService aiService;
+    private AIService aiService_help;
+    private AIService aiService_PodCast;
+    private AIService currentaiService;
+
+    //
+    //
+    private MediaPlayer audioPlayer;
+    private Context context;
+
 
     //
     private WolframAlphaAPI wolframAlphaAPI;
 
     //
-    private Context context;
-
-    //
-    private Handler messageHandler;
+    private int Mood;
 
 
-    public DialogManager(Context context, AIListener listener, Handler messageHandler) {
+    public DialogManager(Context context, AIListener listener) {
 
-        //
+        // let's try two agents
         final AIConfiguration config = new AIConfiguration(CLIENT_ACCESS_TOKEN_FAIL,
                 SUBSCRIPTION_KEY_FAIL,
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
+        final AIConfiguration configPodcast = new AIConfiguration(CLIENT_ACCESS_TOKEN_PODCAST,
+                SUBSCRIPTION_KEY_PODCAST,
+                AIConfiguration.SupportedLanguages.English,
+                AIConfiguration.RecognitionEngine.System);
 
-        aiService = AIService.getService(context, config);
-        aiService.setListener(listener);
+
+        aiService_help = AIService.getService(context, config);
+        aiService_help.setListener(listener);
+        aiService_PodCast = AIService.getService(context, configPodcast);
+        aiService_PodCast.setListener(listener);
+        currentaiService = aiService_PodCast;
+        this.context = context;
+
+        Mood = MOOD_HAPPY;
 
         wolframAlphaAPI = new WolframAlphaAPI();
-
-        this.context = context;
-        this.messageHandler = messageHandler;
     }
 
 
@@ -65,17 +90,112 @@ public class DialogManager {
     }
 
 
+    public void setMoodSad()
+    {
+        Mood = MOOD_SAD;
+    }
+
+    public void setMoodHappy() {Mood = MOOD_HAPPY;}
+
+    private void playAudio() {
+
+        Uri uri = Uri.parse("android.resource://" + this.context.getPackageName() + "/" + R.raw.booksample);
+        audioPlayer = audioPlayer.create(this.context,R.raw.booksample);
+        audioPlayer.start();
+    }
+
     public String sendRequestInternal(String input) {
 
         try {
-            AIResponse response = aiService.textRequest(input, new RequestExtras());
+            boolean switch_to_normal = false;
+            String original_text = "";
+            AIResponse response = currentaiService.textRequest(input, new RequestExtras());
+            if (response.getResult().getAction().equals("switch_to_help")) {
+                String newInput = "help";
+                currentaiService = aiService_help;
+                response = currentaiService.textRequest(newInput, new RequestExtras());
+                // If all ok delete code below TODO: delete this code once ok
+                /*List<AIContext> contexts = new ArrayList<>();
+                contexts.add(new AIContext("ext-help"));
+                RequestExtras requestExtras = new RequestExtras(contexts, null);
+                requestExtras.setContexts(contexts);
+                currentaiService.textRequest("help",requestExtras);*/
+            }
+            if (response.getResult().getAction().equals("switch_to_normal"))
+            {
+                switch_to_normal = true;
+                String newInput = "I'm back";
+                original_text = response.getResult().getFulfillment().getSpeech();
+                currentaiService = aiService_PodCast;
+                response = currentaiService.textRequest(newInput, new RequestExtras());
 
+            }
+
+            // support logic for the podcast agent
+
+            if (currentaiService == aiService_PodCast)
+            {
+                if (response.getResult().getAction().equals("elder-bored"))
+                {
+                    switch (Mood)
+                    {
+                        case MOOD_HAPPY:
+                            Result updatedResult = new Result();
+                            Fulfillment updatedfullfillment = new Fulfillment();
+                            updatedfullfillment.setSpeech("You are always bored my friend... let's start and have some fun!");
+                            updatedResult.setFulfillment(updatedfullfillment);
+                            response.setResult(updatedResult);
+                            break;
+                        case MOOD_SAD:
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+
+                if (response.getResult().getAction().equals("play-book"))
+                {
+                    playAudio();
+                }
+            }
+            // suporting logic for the help agent
+            if (currentaiService == aiService_help)
+            {
+                if (response.getResult().getMetadata().getIntentName().equals("condition - bad"))
+                {
+                    if (response.getResult().getResolvedQuery().equals("no"))
+                    {
+                        //List<AIContext> contexts = new ArrayList<>();
+                        //contexts.add(new AIContext("call-somebody-no"));
+                        //List<Entity> entities = new ArrayList<>();
+                        //entities.add (new Entity("@pain-interjection"));
+                        //RequestExtras requestExtras = new RequestExtras(contexts, entities);
+                        //requestExtras.setContexts(contexts);
+                        //requestExtras.setEntities(entities);
+                        //currentaiService.startListening(requestExtras);
+                        //currentaiService.textRequest("",requestExtras);
+                        /*Metadata metaData;
+                        metaData = new Metadata();
+                        metaData.setIntentName("call - somebody - response - no");
+                        response.getResult().setMetadata(metaData);*/
+                    }
+                }
+            }
 
             if (response.getResult().getAction().equals("ask_wolfram")) {
                 return wolframAlphaAPI.sendRequest(response.getResult().getStringParameter("text"));
             } else {
-                //return response.getResult().getResolvedQuery();
-                return response.getResult().getFulfillment().getSpeech();
+                if (switch_to_normal)
+                {
+                    return original_text + ", " + response.getResult().getFulfillment().getSpeech();
+                }
+                else
+                {
+                    //return response.getResult().getResolvedQuery();
+                    return response.getResult().getFulfillment().getSpeech();
+                }
+
             }
 
         } catch (Exception e) {

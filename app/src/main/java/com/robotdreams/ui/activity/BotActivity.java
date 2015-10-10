@@ -3,7 +3,11 @@ package com.robotdreams.ui.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -22,6 +26,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.RadioButton;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
@@ -41,13 +46,14 @@ import ai.api.model.AIError;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
 import butterknife.InjectView;
-
+import android.app.AlertDialog;
 /**
  *
  */
 public class BotActivity extends BaseActivity implements SendRequestButton.OnSendClickListener, AIListener {
     public static final String ARG_DRAWING_START_LOCATION = "arg_drawing_start_location";
     private static final int REQ_CODE_SPEECH_INPUT = 100;
+
 
     @InjectView(R.id.contentRoot)
     LinearLayout contentRoot;
@@ -81,6 +87,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     SurfaceView surfaceView;
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,6 +103,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         cameraControl.init(getApplicationContext(), surfaceView);
 
         dialogManager = new DialogManager(this, this, messageHandler);
+
+        dialogManager.setMoodHappy(); // happy
 
         drawingStartLocation = getIntent().getIntExtra(ARG_DRAWING_START_LOCATION, 0);
         if (savedInstanceState == null) {
@@ -217,6 +226,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                 .start();
     }
 
+
     @Override
     public void onBackPressed() {
         contentRoot.animate()
@@ -243,6 +253,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
+
         }
 
         if (comment != null) {
@@ -250,9 +261,46 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
+            if (comment.equals("Calling")) // let's try and open Skype...
+            {
+                callSkype();
+            }
+            else
+                tts.speak(comment, TextToSpeech.QUEUE_FLUSH, null, "1");
         }
+    }
 
-        tts.speak(comment, TextToSpeech.QUEUE_FLUSH, null, "1");
+    private void callSkype()
+    {
+        final String [] whotocall = {"amiruk2004","danielle.mendelsohn","dorinphilly"};
+        final String [] whotocallnames = {"Dave", "Betty","Dor"};
+        // 1. Instantiate an AlertDialog.Builder with its constructor
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // 2. Chain together various setter methods to set the dialog characteristics
+
+        builder.setTitle("Who Should I call?")
+                .setItems(whotocallnames, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        String skypeName = whotocall[which];
+                        String mySkypeUri = "skype:" + skypeName + "?call&video=true";
+                        String callingStr = "calling"+whotocallnames[which];
+
+                        Uri skypeUri = Uri.parse(mySkypeUri);
+                        Intent myIntent = new Intent(Intent.ACTION_VIEW, skypeUri);
+                        myIntent.setComponent(new ComponentName("com.skype.raider", "com.skype.raider.Main"));
+                        myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(myIntent);
+
+                        tts.speak(callingStr, TextToSpeech.QUEUE_FLUSH, null, "1");
+
+                    }
+                });
+        // 3. Get the AlertDialog from create()
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private String getComment() {
@@ -335,6 +383,23 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
             }
         });
+    }
+
+    public void onRadioButtonClicked(View view) {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // Check which radio button was clicked
+        switch(view.getId()) {
+            case R.id.HappyradioButton:
+                if (checked)
+                    dialogManager.setMoodHappy();// MOOD_SAD
+                    break;
+            case R.id.SadradioButton:
+                if (checked)
+                    dialogManager.setMoodSad();
+                    break;
+        }
     }
 
     @Override

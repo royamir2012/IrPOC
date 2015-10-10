@@ -30,12 +30,13 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile "com.android.support:appcompat-v7:22.2.0"
-    compile 'com.android.support:support-v13:21.0.3'
+    // api.ai SDK
+    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:support-v13:22.2.0'
     compile 'com.android.support:support-v4:22.2.0'
-    compile 'com.android.support:palette-v7:21.0.3'
-    compile 'com.android.support:recyclerview-v7:21.0.3'
-    compile 'com.android.support:cardview-v7:21.0.3'
+    compile 'com.android.support:palette-v7:22.2.0'
+    compile 'com.android.support:recyclerview-v7:22.2.0'
+    compile 'com.android.support:cardview-v7:22.2.0'
     compile 'com.jakewharton:butterknife:6.1.0'
     compile 'com.jakewharton.timber:timber:2.5.1'
     compile 'com.facebook.rebound:rebound:0.3.6'
@@ -46,10 +47,8 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
     compile 'commons-logging:commons-logging:1.2'
     compile 'commons-codec:commons-codec:1.10'
-    compile 'com.loopj.android:android-async-http:1.4.9'
-    compile 'org.apache.httpcomponents:httpclient-android:4.3.5.1'
-
-    // api.ai SDK
-    compile 'ai.api:sdk:1.6.6@aar'
+    compile 'org.apache.httpcomponents:httpclient:4.5'
+    compile 'org.apache.httpcomponents:httpcore:4.4.1'
+    compile 'ai.api:sdk:1.7.0@aar'
 }
 
