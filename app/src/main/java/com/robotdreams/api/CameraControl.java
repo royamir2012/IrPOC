@@ -6,9 +6,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Created by assaf_000 on 10/10/2015.
@@ -24,9 +22,12 @@ public class CameraControl implements SurfaceHolder.Callback {
     SurfaceHolder surfaceHolder;
 
     TakePictures takePictures;
+    CamFindRestClient camFindClient = new CamFindRestClient();
+    Context context;
 
     public void init(final Context context, SurfaceView surfaceView) {
 
+        this.context = context;
         this.running = true;
 
         this.surfaceHolder = surfaceView.getHolder();
@@ -58,49 +59,8 @@ public class CameraControl implements SurfaceHolder.Callback {
 
         try {
 
-            InputStream is = new ByteArrayInputStream(data);
-
-/*            // These code snippets use an open-source library. http://unirest.io/java
-            HttpResponse<JsonNode> imageResponse = Unirest.post("https://camfind.p.mashape.com/image_requests")
-                    .header("X-Mashape-Key", "Q8K6tMbCXJmshc8PFefRaFRH120Fp1USOTvjsnMGi41mrZ5wF8")
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("Accept", "application/json")
-                    .field("focus[x]", "480")
-                    .field("focus[y]", "640")
-                    .field("image_request[altitude]", "27.912109375")
-                    .field("image_request[language]", "en")
-                    .field("image_request[latitude]", "35.8714220766008")
-                    .field("image_request[locale]", "en_US")
-                    .field("image_request[longitude]", "14.3583203002251")
-                    .field("image_request[image]", is)
-                    .asJson();
-
-            JSONObject imageJson = imageResponse.getBody().getObject();
-            String token = imageJson.getString("token");*/
-
-/*
-            JSONObject dataJson = null;
-            int tries = 0;
-            while(tries++ < 10) {
-                // These code snippets use an open-source library. http://unirest.io/java
-                HttpResponse<JsonNode> dataResponse = Unirest.get("https://camfind.p.mashape.com/image_responses/" + token)
-                        .header("X-Mashape-Key", "Q8K6tMbCXJmshc8PFefRaFRH120Fp1USOTvjsnMGi41mrZ5wF8")
-                        .header("Accept", "application/json")
-                        .asJson();
-
-                dataJson = dataResponse.getBody().getObject();
-                String status = dataJson.getString("status");
-                if(status.equals("completed") || status.equals("skipped")) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-
-            if (dataJson != null) {
-                String name = dataJson.getString("name");
-                System.out.println("image:" + name);
-            }
-*/
+            String name = camFindClient.imageRequest(context, data);
+            System.out.println(name);
 
 /*
             FileOutputStream outStream = null;
