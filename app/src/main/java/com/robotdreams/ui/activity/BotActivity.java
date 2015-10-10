@@ -239,13 +239,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         String userinput = getUserInput();
 
         if (userinput != null) {
-            botAdapter.addItem(userinput);
-            botAdapter.setAnimationsLocked(false);
-            botAdapter.setDelayEnterAnimation(false);
-
-            if (rvComments.getChildCount() > 0) {
-                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
-            }
+            appendComment(BotAdapter.Type.Voice, comment);
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
