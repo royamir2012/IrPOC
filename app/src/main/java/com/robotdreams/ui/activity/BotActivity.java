@@ -9,11 +9,14 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
@@ -27,6 +30,7 @@ import android.widget.RadioButton;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
+import com.robotdreams.api.CameraControl;
 import com.robotdreams.api.DialogManager;
 import com.robotdreams.ui.adapter.BotAdapter;
 import com.robotdreams.ui.view.SendRequestButton;
@@ -63,12 +67,24 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     SendRequestButton btnSendComment;
     @InjectView(R.id.btnSpeak)
     ImageButton btnSpeak;
+    @InjectView(R.id.btnCamera)
+    ImageButton btnCamera;
 
     private TextToSpeech tts;
 
     private BotAdapter botAdapter;
     private int drawingStartLocation;
     private DialogManager dialogManager;
+    private CameraControl cameraControl;
+
+    private Handler messageHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            onHandleMessage(msg);
+        }
+    };
+
+
+    SurfaceView surfaceView;
 
 
     @Override
@@ -77,9 +93,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setContentView(R.layout.activity_bot);
         setupComments();
         setupSpeakButton();
+        setupCameraButton();
         setupSendCommentButton();
 
-        dialogManager = new DialogManager(this, this);
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+
+        cameraControl = new CameraControl(messageHandler);
+        cameraControl.init(getApplicationContext(), surfaceView);
+
+        dialogManager = new DialogManager(this, this, messageHandler);
 
         dialogManager.setMoodHappy(); // happy
 
@@ -108,6 +130,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                 "SUBSCRIPTION_KEY_FAIL",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void setupComments() {
@@ -142,6 +169,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         });
     }
 
+    private void setupCameraButton() {
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                cameraControl.takePictures();
+            }
+        });
+    }
     /**
      * Showing google speech input dialog
      */
@@ -211,28 +247,16 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         String userinput = getUserInput();
 
         if (userinput != null) {
-            botAdapter.addItem(userinput);
-            botAdapter.setAnimationsLocked(false);
-            botAdapter.setDelayEnterAnimation(false);
 
-            if (rvComments.getChildCount() > 0) {
-                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
-            }
-
+            appendComment(BotAdapter.Type.Voice, userinput);
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
 
         }
 
         if (comment != null) {
-            botAdapter.addItem(comment);
-            botAdapter.setAnimationsLocked(false);
-            botAdapter.setDelayEnterAnimation(false);
 
-            if (rvComments.getChildCount() > 0) {
-                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
-            }
-
+            appendComment(BotAdapter.Type.Voice, comment);
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
             if (comment.equals("Calling")) // let's try and open Skype...
@@ -394,5 +418,22 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     @Override
     public void onAudioLevel(final float level) {
         // show sound level
+    }
+
+    private void appendComment(BotAdapter.Type type, String comment) {
+
+        botAdapter.addItem(type, comment);
+        botAdapter.setAnimationsLocked(false);
+        botAdapter.setDelayEnterAnimation(false);
+
+        if (rvComments.getChildCount() > 0) {
+            rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
+        }
+
+    }
+
+    public void onHandleMessage(Message msg) {
+
+        appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
     }
 }
