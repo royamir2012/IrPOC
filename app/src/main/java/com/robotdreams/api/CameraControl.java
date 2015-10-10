@@ -2,6 +2,9 @@ package com.robotdreams.api;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
@@ -14,16 +17,22 @@ import java.io.IOException;
 public class CameraControl implements SurfaceHolder.Callback {
     Camera camera;
     volatile boolean running = false;
+    volatile boolean takePictures = false;
 
-    Camera.PictureCallback rawCallback;
-    Camera.ShutterCallback shutterCallback;
     Camera.PictureCallback jpegCallback;
 
     SurfaceHolder surfaceHolder;
 
-    TakePictures takePictures;
+    TakePictures takePicturesThread;
     CamFindRestClient camFindClient = new CamFindRestClient();
     Context context;
+
+    Handler messageHandler;
+
+    public CameraControl(Handler messageHandler) {
+
+        this.messageHandler = messageHandler;
+    }
 
     public void init(final Context context, SurfaceView surfaceView) {
 
@@ -44,8 +53,12 @@ public class CameraControl implements SurfaceHolder.Callback {
             }
         };
 
-        takePictures = new TakePictures();
-        takePictures.start();
+        takePicturesThread = new TakePictures();
+        takePicturesThread.start();
+    }
+
+    public void takePictures() {
+        takePictures = true;
     }
 
     public void captureImage() throws IOException {
@@ -62,20 +75,13 @@ public class CameraControl implements SurfaceHolder.Callback {
             String name = camFindClient.imageRequest(context, data);
             System.out.println(name);
 
-/*
-            FileOutputStream outStream = null;
-            try {
-                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                outStream.write(data);
-                outStream.close();
-                Log.d("Log", "onPictureTaken - wrote bytes: " + data.length);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-            }
-*/
+            Message message = new Message();
+            Bundle bundle = new Bundle();
+            bundle.putString("message", name);
+            message.setData(bundle);
+
+            messageHandler.dispatchMessage(message);
+
         } catch (Throwable e) {
 
             System.out.println(e.toString());
@@ -144,7 +150,7 @@ public class CameraControl implements SurfaceHolder.Callback {
     public void surfaceDestroyed(SurfaceHolder holder) {
         this.running = false;
         try {
-            takePictures.join();
+            takePicturesThread.join();
         } catch (Exception e) {
 
         }
@@ -157,16 +163,33 @@ public class CameraControl implements SurfaceHolder.Callback {
 
     class TakePictures extends Thread {
 
-        private Exception exception;
-
         public void run() {
+
             while (running) {
-                try {
-                    captureImage();
-                    Thread.sleep(30000);
-                } catch (Exception e) {
-                    this.exception = e;
+
+                while (running && camera == null) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                    }
                 }
+
+                if (takePictures) {
+                    for (int i = 0; running && i < 3; i++) {
+                        try {
+                            captureImage();
+                            Thread.sleep(10000);
+                        } catch (Exception e) {
+                        }
+                    }
+
+                    takePictures = false;
+                }
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
             }
         }
     }
@@ -178,8 +201,6 @@ public class CameraControl implements SurfaceHolder.Callback {
         HandleImage(byte[] data) {
             this.data = data;
         }
-
-        private Exception exception;
 
         public void run() {
             handleImage(data);

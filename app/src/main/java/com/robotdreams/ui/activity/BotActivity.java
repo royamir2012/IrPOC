@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
@@ -59,6 +61,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     SendRequestButton btnSendComment;
     @InjectView(R.id.btnSpeak)
     ImageButton btnSpeak;
+    @InjectView(R.id.btnCamera)
+    ImageButton btnCamera;
 
     private TextToSpeech tts;
 
@@ -66,6 +70,12 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     private int drawingStartLocation;
     private DialogManager dialogManager;
     private CameraControl cameraControl;
+
+    private Handler messageHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            onHandleMessage(msg);
+        }
+    };
 
 
     SurfaceView surfaceView;
@@ -77,14 +87,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setContentView(R.layout.activity_bot);
         setupComments();
         setupSpeakButton();
+        setupCameraButton();
         setupSendCommentButton();
 
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
 
-        cameraControl = new CameraControl();
+        cameraControl = new CameraControl(messageHandler);
         cameraControl.init(getApplicationContext(), surfaceView);
 
-        dialogManager = new DialogManager(this, this);
+        dialogManager = new DialogManager(this, this, messageHandler);
 
         drawingStartLocation = getIntent().getIntExtra(ARG_DRAWING_START_LOCATION, 0);
         if (savedInstanceState == null) {
@@ -146,6 +157,16 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             @Override
             public void onClick(View v) {
                 promptSpeechInput();
+            }
+        });
+    }
+
+    private void setupCameraButton() {
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                cameraControl.takePictures();
             }
         });
     }
@@ -217,13 +238,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         String comment = getComment();
 
         if (comment != null) {
-            botAdapter.addItem(comment);
-            botAdapter.setAnimationsLocked(false);
-            botAdapter.setDelayEnterAnimation(false);
-
-            if (rvComments.getChildCount() > 0) {
-                rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
-            }
+            appendComment(comment);
 
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
@@ -320,6 +335,23 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     @Override
     public void onAudioLevel(final float level) {
         // show sound level
+    }
+
+    private void appendComment(String comment) {
+
+        botAdapter.addItem(comment);
+        botAdapter.setAnimationsLocked(false);
+        botAdapter.setDelayEnterAnimation(false);
+
+        if (rvComments.getChildCount() > 0) {
+            rvComments.smoothScrollBy(0, rvComments.getChildAt(0).getHeight() * botAdapter.getItemCount());
+        }
+
+    }
+
+    public void onHandleMessage(Message msg) {
+
+        appendComment(msg.getData().getString("message"));
     }
 
 }

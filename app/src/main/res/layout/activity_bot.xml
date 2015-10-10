@@ -64,6 +64,13 @@
                 android:src="@drawable/ico_mic"
                 android:scaleType="centerCrop" />
 
+            <ImageButton
+                android:layout_width="44dp"
+                android:layout_height="42dp"
+                android:id="@+id/btnCamera"
+                android:src="@drawable/ico_camera"
+                android:scaleType="centerCrop" />
+
             <com.robotdreams.ui.view.SendRequestButton
                 android:id="@+id/btnSendComment"
                 android:layout_width="48dp"
