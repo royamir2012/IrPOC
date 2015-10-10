@@ -10,6 +10,7 @@ import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
+import com.robotdreams.api.CameraControl;
 import com.robotdreams.api.DialogManager;
 import com.robotdreams.ui.adapter.BotAdapter;
 import com.robotdreams.ui.view.SendRequestButton;
@@ -63,6 +65,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     private BotAdapter botAdapter;
     private int drawingStartLocation;
     private DialogManager dialogManager;
+    private CameraControl cameraControl;
+
+
+    SurfaceView surfaceView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +78,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setupComments();
         setupSpeakButton();
         setupSendCommentButton();
+
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+
+        cameraControl = new CameraControl();
+        cameraControl.init(getApplicationContext(), surfaceView);
 
         dialogManager = new DialogManager(this, this);
 
@@ -99,6 +111,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                 "SUBSCRIPTION_KEY",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void setupComments() {
@@ -304,4 +321,5 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     public void onAudioLevel(final float level) {
         // show sound level
     }
+
 }
