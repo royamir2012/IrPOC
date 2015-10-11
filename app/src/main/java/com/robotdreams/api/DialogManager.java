@@ -117,6 +117,7 @@ public class DialogManager {
                 String newInput = "help";
                 currentaiService = aiService_help;
                 response = currentaiService.textRequest(newInput, new RequestExtras());
+                audioPlayer.stop();
                 // If all ok delete code below TODO: delete this code once ok
                 /*List<AIContext> contexts = new ArrayList<>();
                 contexts.add(new AIContext("ext-help"));
@@ -160,6 +161,10 @@ public class DialogManager {
                 if (response.getResult().getAction().equals("play-book"))
                 {
                     playAudio();
+                }
+                if (response.getResult().getAction().equals("stop-book"))
+                {
+                    audioPlayer.stop();
                 }
             }
             // suporting logic for the help agent
