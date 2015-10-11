@@ -103,7 +103,7 @@ public class DialogManager {
     private void playAudio() {
 
         Uri uri = Uri.parse("android.resource://" + this.context.getPackageName() + "/" + R.raw.booksample);
-        audioPlayer = audioPlayer.create(this.context,R.raw.booksample);
+        audioPlayer = audioPlayer.create(this.context,R.raw.booksample1);
         audioPlayer.start();
     }
 
