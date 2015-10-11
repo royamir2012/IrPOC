@@ -176,7 +176,7 @@ public class CameraControl implements SurfaceHolder.Callback {
                 }
 
                 if (takePictures) {
-                    for (int i = 0; running && i < 3; i++) {
+                    for (int i = 0; running && i < 2; i++) {
                         try {
                             captureImage();
                             Thread.sleep(10000);
