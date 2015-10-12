@@ -80,6 +80,7 @@ public class CameraControl implements SurfaceHolder.Callback {
             Bundle bundle = new Bundle();
             bundle.putString("message", name);
             message.setData(bundle);
+            message.sendingUid = 1; // TODO replace 1 with enum
 
             messageHandler.dispatchMessage(message);
 
