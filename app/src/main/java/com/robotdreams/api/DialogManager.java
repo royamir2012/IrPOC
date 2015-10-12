@@ -7,6 +7,7 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 
 
@@ -14,12 +15,14 @@ import ai.api.AIConfiguration;
 import ai.api.AIListener;
 import ai.api.AIService;
 import ai.api.RequestExtras;
+import android.os.Message;
 import com.robotdreams.R;
 import com.robotdreams.ui.activity.BotActivity;
 
 /**
  *
  */
+
 
 public class DialogManager {
 
@@ -35,6 +38,10 @@ public class DialogManager {
 
     private static final int MOOD_SAD = 1;
     private static final int MOOD_HAPPY = 2;
+
+    public enum msgType {
+        Camera, Skype
+    }
 
     //
     private AIService aiService_help;
@@ -79,6 +86,7 @@ public class DialogManager {
         this.context = context;
         this.messageHandler = messageHandler;
         Mood = MOOD_HAPPY;
+        audioPlayer = null;
     }
 
 
@@ -102,9 +110,22 @@ public class DialogManager {
 
     private void playAudio() {
 
+        try {
+            Thread.sleep(3000);                 // delay by 3000 milliseconds (3 seconds)
+        } catch(Exception e) {
+        }
+
         Uri uri = Uri.parse("android.resource://" + this.context.getPackageName() + "/" + R.raw.booksample);
         audioPlayer = audioPlayer.create(this.context,R.raw.booksample1);
         audioPlayer.start();
+    }
+
+    private void stopAudio()
+    {
+        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
+        {
+            audioPlayer.stop();
+        }
     }
 
     public String sendRequestInternal(String input) {
@@ -113,11 +134,13 @@ public class DialogManager {
             boolean switch_to_normal = false;
             String original_text = "";
             AIResponse response = currentaiService.textRequest(input, new RequestExtras());
-            if (response.getResult().getAction().equals("switch_to_help")) {
+            if (response.getResult().getAction().equals("switch_to_help"))
+            {
                 String newInput = "help";
                 currentaiService = aiService_help;
+                stopAudio();
                 response = currentaiService.textRequest(newInput, new RequestExtras());
-                audioPlayer.stop();
+
                 // If all ok delete code below TODO: delete this code once ok
                 /*List<AIContext> contexts = new ArrayList<>();
                 contexts.add(new AIContext("ext-help"));
@@ -133,6 +156,14 @@ public class DialogManager {
                 currentaiService = aiService_PodCast;
                 response = currentaiService.textRequest(newInput, new RequestExtras());
 
+            }
+            // reset agents and go back to podcast agent
+            if (response.getResult().getAction().equals("reset-state"))
+            {
+                currentaiService = aiService_PodCast;
+                currentaiService.resetContexts();
+                aiService_help.resetContexts(); // do for both agents
+                stopAudio();
             }
 
             // support logic for the podcast agent
@@ -162,9 +193,9 @@ public class DialogManager {
                 {
                     playAudio();
                 }
-                if (response.getResult().getAction().equals("stop-book"))
+                if (response.getResult().getAction().equals("stop_book"))
                 {
-                    audioPlayer.stop();
+                    stopAudio();
                 }
             }
             // suporting logic for the help agent
@@ -188,6 +219,16 @@ public class DialogManager {
                         metaData.setIntentName("call - somebody - response - no");
                         response.getResult().setMetadata(metaData);*/
                     }
+                }
+                if (response.getResult().getAction().equals("call_skype"))
+                {
+                    Message message = new Message();
+                    Bundle bundle = new Bundle();
+                    bundle.putString("message", "skype");
+                    message.setData(bundle);
+                    message.sendingUid = 2; // TODO replace 2 with enum
+
+                    //this.messageHandler.dispatchMessage(message); TODO fix this one
                 }
             }
 
