@@ -76,6 +76,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     private int drawingStartLocation;
     private DialogManager dialogManager;
     private CameraControl cameraControl;
+    private String lastpicture;
 
     private Handler messageHandler = new Handler() {
         public void handleMessage(Message msg) {
@@ -100,6 +101,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         cameraControl = new CameraControl(messageHandler);
         cameraControl.init(getApplicationContext(), surfaceView);
+        lastpicture = null;
 
         dialogManager = new DialogManager(this, this, messageHandler);
 
@@ -263,7 +265,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             {
                 callSkype();
             }
-            else
+            else // TODO remove after fix message
                 tts.speak(comment, TextToSpeech.QUEUE_FLUSH, null, "1");
         }
     }
@@ -434,6 +436,35 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
     public void onHandleMessage(Message msg) {
 
-        appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+
+        if ( msg.sendingUid == 1) // TODO replace 1 with enum
+        {
+            //appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+            if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
+            {
+                if ( lastpicture.equals(msg.getData().getString("message"))) // no change
+                {
+                    appendComment(BotAdapter.Type.Camera, msg.getData().getString("message")+"no change");
+                }
+                else // this one reflects emergency - so switch to help
+                {
+                    appendComment(BotAdapter.Type.Camera, "change -> help");
+                    tts.speak("Please say help if help is needed", TextToSpeech.QUEUE_FLUSH, null, "1");
+                }
+
+                lastpicture = null; // for next round of two TODO handle reset event
+            }
+            else // first picture in round
+            {
+                lastpicture = msg.getData().getString("message");
+            }
+        }
+        if ( msg.sendingUid == 2) // TODO replace 2
+        {
+            callSkype();
+        }
+        if ( msg.sendingUid == 3) // TODO replace 3
+            lastpicture = null;
+
     }
 }
