@@ -2,6 +2,7 @@ package com.robotdreams.api;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -122,13 +123,29 @@ public class CameraControl implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         try {
             // open the camera
-            camera = Camera.open();
+            int numOfCameras = Camera.getNumberOfCameras();
+            int cameraTouse;
+            for (cameraTouse =0; cameraTouse < numOfCameras; cameraTouse++)
+            {
+                CameraInfo cameraInfo = new CameraInfo();
+                camera = Camera.open(cameraTouse);
+                camera.release();
+                if (cameraInfo.facing == cameraInfo.CAMERA_FACING_BACK)
+                    break;
+
+            }
+            if (numOfCameras > 0) // there is at least one...
+            {
+                camera = Camera.open(cameraTouse); // assumes back camera is the "highest" one
+            }
+
         } catch (RuntimeException e) {
             // check for exceptions
             System.err.println(e);
             return;
         }
-        Camera.Parameters param;
+
+        Camera.Parameters param; // TODO take care of the case of no camera
         param = camera.getParameters();
 
         // modify parameter
