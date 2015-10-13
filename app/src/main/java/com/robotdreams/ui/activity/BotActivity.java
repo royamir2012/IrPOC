@@ -439,7 +439,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         if ( msg.sendingUid == 1) // TODO replace 1 with enum
         {
-            //appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+            appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
             if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
             {
                 if ( lastpicture.equals(msg.getData().getString("message"))) // no change
