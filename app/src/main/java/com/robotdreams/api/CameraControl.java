@@ -136,7 +136,7 @@ public class CameraControl implements SurfaceHolder.Callback {
             }
             if (numOfCameras > 0) // there is at least one...
             {
-                camera = Camera.open(cameraTouse); // assumes back camera is the "highest" one
+                camera = Camera.open(cameraTouse); // open the back one
             }
 
         } catch (RuntimeException e) {
