@@ -332,6 +332,12 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         return userInput;
     }
+
+    private void emulateSendButtonClick()
+    {
+        View v = findViewById(R.id.btnSendComment);
+        v.performClick();
+    }
     /**
      * Receiving speech input
      */
@@ -346,6 +352,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                     ArrayList<String> result = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     etComment.setText(result.get(0));
+                    emulateSendButtonClick(); // to avoid pressing the send button
                 }
                 break;
             }
