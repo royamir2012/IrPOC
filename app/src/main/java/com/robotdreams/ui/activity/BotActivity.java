@@ -2,7 +2,7 @@ package com.robotdreams.ui.activity;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.content.ActivityNotFoundException;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -11,11 +11,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -46,14 +49,14 @@ import ai.api.model.AIError;
 import ai.api.model.AIResponse;
 import ai.api.model.Result;
 import butterknife.InjectView;
-import android.app.AlertDialog;
+
 /**
  *
  */
 public class BotActivity extends BaseActivity implements SendRequestButton.OnSendClickListener, AIListener {
     public static final String ARG_DRAWING_START_LOCATION = "arg_drawing_start_location";
     private static final int REQ_CODE_SPEECH_INPUT = 100;
-
+    private static final String TAG = "BotActivity";
 
     @InjectView(R.id.contentRoot)
     LinearLayout contentRoot;
@@ -71,6 +74,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     ImageButton btnCamera;
 
     private TextToSpeech tts;
+    private SpeechRecognizer sr;
 
     private BotAdapter botAdapter;
     private int drawingStartLocation;
@@ -128,6 +132,9 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             }
         });
 
+        sr = SpeechRecognizer.createSpeechRecognizer(this);
+        sr.setRecognitionListener(new STTListener());
+
         final AIConfiguration config = new AIConfiguration("CLIENT_ACCESS_TOKEN_FAIL",
                 "SUBSCRIPTION_KEY_FAIL",
                 AIConfiguration.SupportedLanguages.English,
@@ -180,24 +187,20 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             }
         });
     }
+
     /**
      * Showing google speech input dialog
      */
     private void promptSpeechInput() {
 
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, "com.robotdreams.ui.activity");
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
-                getString(R.string.speech_prompt));
-        try {
-            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
-        } catch (ActivityNotFoundException a) {
-            Toast.makeText(getApplicationContext(),
-                    getString(R.string.speech_not_supported),
-                    Toast.LENGTH_SHORT).show();
-        }
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.speech_prompt));
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+
+        sr.startListening(intent);
     }
 
     private void startIntroAnimation() {
@@ -245,6 +248,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     @Override
     public void onSendClickListener(View v) {
 
+        sendComment();
+    }
+
+    private void sendComment() {
+
         String comment = getComment();
         String userinput = getUserInput();
 
@@ -264,16 +272,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             if (comment.equals("Calling")) // let's try and open Skype...
             {
                 callSkype();
-            }
-            else // TODO remove after fix message
+            } else // TODO remove after fix message
                 tts.speak(comment, TextToSpeech.QUEUE_FLUSH, null, "1");
         }
+
     }
 
-    private void callSkype()
-    {
-        final String [] whotocall = {"amiruk2004","danielle.mendelsohn","dorinphilly"};
-        final String [] whotocallnames = {"Dave", "Betty","Dor"};
+    private void callSkype() {
+        final String[] whotocall = {"amiruk2004", "danielle.mendelsohn", "dorinphilly"};
+        final String[] whotocallnames = {"Dave", "Betty", "Dor"};
         // 1. Instantiate an AlertDialog.Builder with its constructor
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -286,7 +293,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                         // of the selected item
                         String skypeName = whotocall[which];
                         String mySkypeUri = "skype:" + skypeName + "?call&video=true";
-                        String callingStr = "calling"+whotocallnames[which];
+                        String callingStr = "calling" + whotocallnames[which];
 
                         Uri skypeUri = Uri.parse(mySkypeUri);
                         Intent myIntent = new Intent(Intent.ACTION_VIEW, skypeUri);
@@ -352,7 +359,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
                     ArrayList<String> result = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     etComment.setText(result.get(0));
-                    emulateSendButtonClick(); // to avoid pressing the send button
+                    //emulateSendButtonClick(); // not necessary to avoid pressing the send button
                 }
                 break;
             }
@@ -397,15 +404,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         boolean checked = ((RadioButton) view).isChecked();
 
         // Check which radio button was clicked
-        switch(view.getId()) {
+        switch (view.getId()) {
             case R.id.HappyradioButton:
                 if (checked)
                     dialogManager.setMoodHappy();// MOOD_SAD
-                    break;
+                break;
             case R.id.SadradioButton:
                 if (checked)
                     dialogManager.setMoodSad();
-                    break;
+                break;
         }
     }
 
@@ -444,34 +451,66 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     public void onHandleMessage(Message msg) {
 
 
-        if ( msg.sendingUid == 1) // TODO replace 1 with enum
+        if (msg.sendingUid == 1) // TODO replace 1 with enum
         {
             appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
             if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
             {
-                if ( lastpicture.equals(msg.getData().getString("message"))) // no change
+                if (lastpicture.equals(msg.getData().getString("message"))) // no change
                 {
-                    appendComment(BotAdapter.Type.Camera, msg.getData().getString("message")+"no change");
-                }
-                else // this one reflects emergency - so switch to help
+                    appendComment(BotAdapter.Type.Camera, msg.getData().getString("message") + "no change");
+                } else // this one reflects emergency - so switch to help
                 {
                     appendComment(BotAdapter.Type.Camera, "change -> help");
                     tts.speak("Please say help if help is needed", TextToSpeech.QUEUE_FLUSH, null, "1");
                 }
 
                 lastpicture = null; // for next round of two TODO handle reset event
-            }
-            else // first picture in round
+            } else // first picture in round
             {
                 lastpicture = msg.getData().getString("message");
             }
         }
-        if ( msg.sendingUid == 2) // TODO replace 2
+        if (msg.sendingUid == 2) // TODO replace 2
         {
             callSkype();
         }
-        if ( msg.sendingUid == 3) // TODO replace 3
+        if (msg.sendingUid == 3) // TODO replace 3
             lastpicture = null;
 
+    }
+
+    class STTListener implements RecognitionListener {
+        public void onReadyForSpeech(Bundle params) {
+        }
+
+        public void onBeginningOfSpeech() {
+        }
+
+        public void onRmsChanged(float rmsdB) {
+        }
+
+        public void onBufferReceived(byte[] buffer) {
+        }
+
+        public void onEndOfSpeech() {
+        }
+
+        public void onError(int error) {
+        }
+
+        public void onResults(Bundle results) {
+            ArrayList<String> data = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (data != null && !data.isEmpty()) {
+                etComment.setText(data.get(0));
+                sendComment();
+            }
+        }
+
+        public void onPartialResults(Bundle partialResults) {
+        }
+
+        public void onEvent(int eventType, Bundle params) {
+        }
     }
 }
