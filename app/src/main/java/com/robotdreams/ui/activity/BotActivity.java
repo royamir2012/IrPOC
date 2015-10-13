@@ -416,6 +416,16 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
     }
 
+    public void onRadioImageDemoClicked(View view)
+    {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+        if (checked)
+            dialogManager.setPrintCamera();
+        else
+            dialogManager.UnsetPrintCamera();
+    }
+
     @Override
     public void onListeningStarted() {
         // show recording indicator
@@ -453,7 +463,9 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         if (msg.sendingUid == 1) // TODO replace 1 with enum
         {
-            appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+            if (dialogManager.getPrintCamera() == dialogManager.PRINT_CAMERA)
+                appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
+
             if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
             {
                 if (lastpicture.equals(msg.getData().getString("message"))) // no change
@@ -485,6 +497,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onBeginningOfSpeech() {
+            dialogManager.pauseAudio();
         }
 
         public void onRmsChanged(float rmsdB) {
@@ -494,6 +507,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onEndOfSpeech() {
+            dialogManager.resumeAudio();
         }
 
         public void onError(int error) {
