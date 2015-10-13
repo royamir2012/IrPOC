@@ -111,7 +111,7 @@ public class DialogManager {
     private void playAudio() {
 
         try {
-            Thread.sleep(3000);                 // delay by 3000 milliseconds (3 seconds)
+            Thread.sleep(5000);                 // delay by 5000 milliseconds (5 seconds)
         } catch(Exception e) {
         }
 
@@ -164,6 +164,7 @@ public class DialogManager {
                 currentaiService.resetContexts();
                 aiService_help.resetContexts(); // do for both agents
                 stopAudio();
+
             }
 
             // support logic for the podcast agent
@@ -201,34 +202,20 @@ public class DialogManager {
             // suporting logic for the help agent
             if (currentaiService == aiService_help)
             {
-                if (response.getResult().getMetadata().getIntentName().equals("condition - bad"))
-                {
-                    if (response.getResult().getResolvedQuery().equals("no"))
-                    {
-                        //List<AIContext> contexts = new ArrayList<>();
-                        //contexts.add(new AIContext("call-somebody-no"));
-                        //List<Entity> entities = new ArrayList<>();
-                        //entities.add (new Entity("@pain-interjection"));
-                        //RequestExtras requestExtras = new RequestExtras(contexts, entities);
-                        //requestExtras.setContexts(contexts);
-                        //requestExtras.setEntities(entities);
-                        //currentaiService.startListening(requestExtras);
-                        //currentaiService.textRequest("",requestExtras);
-                        /*Metadata metaData;
-                        metaData = new Metadata();
-                        metaData.setIntentName("call - somebody - response - no");
-                        response.getResult().setMetadata(metaData);*/
-                    }
-                }
-                if (response.getResult().getAction().equals("call_skype"))
-                {
+                if (response.getResult().getAction().equals("call_skype")) {
+                    try {
                     Message message = new Message();
                     Bundle bundle = new Bundle();
                     bundle.putString("message", "skype");
                     message.setData(bundle);
                     message.sendingUid = 2; // TODO replace 2 with enum
 
-                    //this.messageHandler.dispatchMessage(message); TODO fix this one
+                    // this.messageHandler.dispatchMessage(message); //TODO fix this one to be called from async task or UI one to work
+                    }
+                    catch (Throwable e) {
+
+                        System.out.println(e.toString());
+                    }
                 }
             }
 
