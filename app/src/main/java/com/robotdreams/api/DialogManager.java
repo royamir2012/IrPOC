@@ -38,6 +38,9 @@ public class DialogManager {
 
     private static final int MOOD_SAD = 1;
     private static final int MOOD_HAPPY = 2;
+    public static final int PRINT_CAMERA = 1;
+    public static final int NO_PRINT_CAMERA = 2;
+
 
     public enum msgType {
         Camera, Skype
@@ -60,6 +63,7 @@ public class DialogManager {
 
     //
     private int Mood;
+    private int printCameraResults;
 
 
     public DialogManager(Context context, AIListener listener, Handler messageHandler) {
@@ -86,6 +90,7 @@ public class DialogManager {
         this.context = context;
         this.messageHandler = messageHandler;
         Mood = MOOD_HAPPY;
+        printCameraResults = NO_PRINT_CAMERA;
         audioPlayer = null;
     }
 
@@ -108,6 +113,13 @@ public class DialogManager {
 
     public void setMoodHappy() {Mood = MOOD_HAPPY;}
 
+    public void setPrintCamera() { printCameraResults = PRINT_CAMERA;}
+
+    public void UnsetPrintCamera() { printCameraResults = NO_PRINT_CAMERA;}
+
+    public int getPrintCamera() { return printCameraResults;}
+
+
     private void playAudio() {
 
         try {
@@ -125,6 +137,21 @@ public class DialogManager {
         if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
         {
             audioPlayer.stop();
+        }
+    }
+    public void pauseAudio()
+    {
+        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
+        {
+            audioPlayer.pause();
+        }
+    }
+
+    public void resumeAudio()
+    {
+        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
+        {
+            audioPlayer.start();
         }
     }
 
