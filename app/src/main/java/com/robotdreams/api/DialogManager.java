@@ -54,6 +54,8 @@ public class DialogManager {
     //
     public AudioControl audioControl;
     //
+    public skypeControl skypeControl;
+    //
     private Context context;
     //
     private Handler messageHandler;
@@ -94,6 +96,8 @@ public class DialogManager {
         Mood = MOOD_HAPPY;
         printCameraResults = NO_PRINT_CAMERA;
         audioControl = new AudioControl(context);
+        skypeControl = new skypeControl(context);
+        skypeControl.setNameToCall("Betty"); // default is Betty
         helpFromCamera = false;
     }
 
@@ -230,23 +234,11 @@ public class DialogManager {
             if (currentaiService == aiService_help)
             {
                 if (response.getResult().getAction().equals("call_skype")) {
-                    try {
-                    Message message = new Message();
-                    Bundle bundle = new Bundle();
-                    bundle.putString("message", "skype");
-                    message.setData(bundle);
-                    message.sendingUid = 2; // TODO replace 2 with enum
-
-                    // this.messageHandler.dispatchMessage(message); //TODO fix this one to be called from async task or UI one to work
-                    }
-                    catch (Throwable e) {
-
-                        System.out.println(e.toString());
-                    }
+                    skypeControl.startSkype();
                 }
-                if (response.getResult().getAction().equals("all_ok"))
+                if (response.getResult().getAction().equals("call"))
                 {
-
+                    response.setResult(updateFulfillment("Shall I call " + skypeControl.getNameToCall() + ", your care giver?"));
                 }
             }
 
