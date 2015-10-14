@@ -23,12 +23,15 @@ public class AudioControl {
 
     //
     private boolean isPaused;
+    private boolean isPausedForInput;
+
 
     public AudioControl(Context context)
     {
         audioPlayer = null;
         this.context = context;
         isPaused = false;
+        isPausedForInput = false;
         this.audioHandler = new RefreshHandler();
     }
 
@@ -57,13 +60,31 @@ public class AudioControl {
         if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
         {
             audioPlayer.pause();
-            isPaused = true;
         }
+        isPaused = true;
+    }
+    public void pauseAudioForInput()
+    {
+        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
+        {
+            audioPlayer.pause();
+        }
+        isPausedForInput = true;
     }
 
     public void resumeAudio()
     {
-        if ((audioPlayer != null)&&(isPaused))
+        if ((audioPlayer!= null)&&isPausedForInput) // temp pause resume only if no permanent pause
+        {
+            isPausedForInput = false; // init anyway for temp status
+            if(!isPaused) // no permanent pause
+            {
+                audioHandler.startAudioDelay(4000); // 4 sec delay
+                //audioPlayer.start();
+                isPaused = false;
+            }
+        }
+        else if ((audioPlayer != null)&&(isPaused)) // permanent pause
         {
             audioHandler.startAudioDelay(4000); // 4 sec delay
             //audioPlayer.start();
