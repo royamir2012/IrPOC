@@ -138,6 +138,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             }
         });
 
+        dialogManager.skypeControl.setTts(tts);
+
         sr = SpeechRecognizer.createSpeechRecognizer(this);
         sr.setRecognitionListener(new STTListener());
 
@@ -214,6 +216,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.speech_prompt));
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,2000);
 
         sr.startListening(intent);
     }
@@ -284,45 +287,13 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             appendComment(BotAdapter.Type.Voice, comment);
             etComment.setText(null);
             btnSendComment.setCurrentState(SendRequestButton.STATE_DONE);
-            if (comment.equals("Calling")) // let's try and open Skype...
+            /*if (comment.equals("Calling")) // let's try and open Skype...
             {
                 callSkype();
-            } else // TODO remove after fix message
+            } else*/ // TODO remove after fix message
                 tts.speak(comment, TextToSpeech.QUEUE_FLUSH, null, "1");
         }
 
-    }
-
-    private void callSkype() {
-        final String[] whotocall = {"amiruk2004", "danielle.mendelsohn", "dorinphilly"};
-        final String[] whotocallnames = {"Dave", "Betty", "Dor"};
-        // 1. Instantiate an AlertDialog.Builder with its constructor
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // 2. Chain together various setter methods to set the dialog characteristics
-
-        builder.setTitle("Who Should I call?")
-                .setItems(whotocallnames, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        // The 'which' argument contains the index position
-                        // of the selected item
-                        String skypeName = whotocall[which];
-                        String mySkypeUri = "skype:" + skypeName + "?call&video=true";
-                        String callingStr = "calling" + whotocallnames[which];
-
-                        Uri skypeUri = Uri.parse(mySkypeUri);
-                        Intent myIntent = new Intent(Intent.ACTION_VIEW, skypeUri);
-                        myIntent.setComponent(new ComponentName("com.skype.raider", "com.skype.raider.Main"));
-                        myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(myIntent);
-
-                        tts.speak(callingStr, TextToSpeech.QUEUE_FLUSH, null, "1");
-
-                    }
-                });
-        // 3. Get the AlertDialog from create()
-        AlertDialog dialog = builder.create();
-        dialog.show();
     }
 
     private String getComment() {
@@ -440,6 +411,28 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
             dialogManager.UnsetPrintCamera();
     }
 
+    public void onClickWhoToCall (View view)
+    {
+        final String[] whotocallnames = {"Dave", "Betty", "Dor"};
+
+        // 1. Instantiate an AlertDialog.Builder with its constructor
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // 2. Chain together various setter methods to set the dialog characteristics
+        builder.setTitle("Who Should I call?")
+                .setItems(whotocallnames, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        dialogManager.skypeControl.setWhich(which);
+                        dialogManager.skypeControl.setNameToCall(whotocallnames[which]);
+                    }
+                });
+        // 3. Get the AlertDialog from create()
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
 
     @Override
     public void onListeningStarted() {
@@ -503,7 +496,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
         if (msg.sendingUid == 2) // TODO replace 2
         {
-            callSkype();
+            // place holder
         }
         if (msg.sendingUid == 3) // TODO replace 3
             lastpicture = null;
@@ -515,7 +508,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onBeginningOfSpeech() {
-            dialogManager.audioControl.pauseAudio();
+            dialogManager.audioControl.pauseAudioForInput();
         }
 
         public void onRmsChanged(float rmsdB) {
@@ -525,7 +518,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onEndOfSpeech() {
-            dialogManager.audioControl.resumeAudio();
+                dialogManager.audioControl.resumeAudio();
         }
 
         public void onError(int error) {
@@ -533,6 +526,14 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         public void onResults(Bundle results) {
             ArrayList<String> data = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            /*// The confidence array
+            float[] confidence = results.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
+
+            // The confidence results
+            for (int i = 0; i < confidence.length; i++) {
+                if ( confidence[i] < 0.5)
+                    break;
+            }*/ // TODO explore this one...
             if (data != null && !data.isEmpty()) {
                 etComment.setText(data.get(0));
                 sendComment();
