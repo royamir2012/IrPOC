@@ -18,6 +18,11 @@
                 android:text="Image Demo"
                 android:id="@+id/imageToggleButton" android:layout_gravity="right" android:checked="false"
                 android:onClick="onImageButtonClicked"/>
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Who to Call?"
+                android:id="@+id/whotocallbutton" android:layout_gravity="right" android:onClick="onClickWhoToCall"/>
         <SurfaceView
                 android:id="@+id/surfaceView"
                 android:layout_width="1dp"
