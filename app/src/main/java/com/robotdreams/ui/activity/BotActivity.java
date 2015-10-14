@@ -30,6 +30,8 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.RadioButton;
+import android.widget.ToggleButton;
+import android.widget.CompoundButton;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
@@ -72,6 +74,9 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     ImageButton btnSpeak;
     @InjectView(R.id.btnCamera)
     ImageButton btnCamera;
+    @InjectView(R.id.imageToggleButton)
+    ToggleButton imagebtn;
+
 
     private TextToSpeech tts;
     private SpeechRecognizer sr;
@@ -100,6 +105,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setupSpeakButton();
         setupCameraButton();
         setupSendCommentButton();
+        setupImageDemoButton();
 
         surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
 
@@ -188,6 +194,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         });
     }
 
+    private void setupImageDemoButton()
+    {
+        CharSequence txtoff = "Image demo off";
+        CharSequence txton = "Image demo on";
+        txtoff.toString().toLowerCase();
+        txton.toString().toLowerCase();
+        imagebtn.setTextOff(txtoff);
+        imagebtn.setTextOn(txton);
+    }
     /**
      * Showing google speech input dialog
      */
@@ -340,7 +355,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         return userInput;
     }
 
-    private void emulateSendButtonClick()
+    private void emulateSendButtonClick() // Not used at the moment
     {
         View v = findViewById(R.id.btnSendComment);
         v.performClick();
@@ -416,15 +431,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
     }
 
-    public void onRadioImageDemoClicked(View view)
+    public void onImageButtonClicked (View view)
     {
-        // Is the button now checked?
-        boolean checked = ((RadioButton) view).isChecked();
+        boolean checked = ((ToggleButton) view).isChecked();
         if (checked)
             dialogManager.setPrintCamera();
         else
             dialogManager.UnsetPrintCamera();
     }
+
 
     @Override
     public void onListeningStarted() {
@@ -465,22 +480,25 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         {
             if (dialogManager.getPrintCamera() == dialogManager.PRINT_CAMERA)
                 appendComment(BotAdapter.Type.Camera, msg.getData().getString("message"));
-
-            if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
+            else // do all this only if no camera demo
             {
-                if (lastpicture.equals(msg.getData().getString("message"))) // no change
+                if (lastpicture != null) // relevant on every second picture asumess 2 pictures per round!!
                 {
-                    appendComment(BotAdapter.Type.Camera, msg.getData().getString("message") + "no change");
-                } else // this one reflects emergency - so switch to help
+                    if (lastpicture.equals(msg.getData().getString("message"))) // no change
+                    {
+                        appendComment(BotAdapter.Type.Camera, msg.getData().getString("message") + "no change");
+                    } else // this one reflects emergency - so switch to help
+                    {
+                        appendComment(BotAdapter.Type.Camera, "change -> help");
+                        tts.speak("Please say help if help is needed", TextToSpeech.QUEUE_FLUSH, null, "1");
+                        dialogManager.setHelpFromCamera();
+                    }
+
+                    lastpicture = null; // for next round of two TODO handle reset event
+                } else // first picture in round
                 {
-                    appendComment(BotAdapter.Type.Camera, "change -> help");
-                    tts.speak("Please say help if help is needed", TextToSpeech.QUEUE_FLUSH, null, "1");
+                    lastpicture = msg.getData().getString("message");
                 }
-
-                lastpicture = null; // for next round of two TODO handle reset event
-            } else // first picture in round
-            {
-                lastpicture = msg.getData().getString("message");
             }
         }
         if (msg.sendingUid == 2) // TODO replace 2
@@ -497,7 +515,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onBeginningOfSpeech() {
-            dialogManager.pauseAudio();
+            dialogManager.audioControl.pauseAudio();
         }
 
         public void onRmsChanged(float rmsdB) {
@@ -507,7 +525,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onEndOfSpeech() {
-            dialogManager.resumeAudio();
+            dialogManager.audioControl.resumeAudio();
         }
 
         public void onError(int error) {
