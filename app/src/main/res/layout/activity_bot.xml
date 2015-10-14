@@ -12,12 +12,12 @@
         android:elevation="@dimen/default_elevation"
         android:orientation="vertical">
 
-        <RadioButton
+        <ToggleButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Image demo"
-                android:id="@+id/imagedemo" android:layout_gravity="right" android:checked="false"
-                android:clickable="true" android:onClick="onRadioImageDemoClicked"/>
+                android:text="Image Demo"
+                android:id="@+id/imageToggleButton" android:layout_gravity="right" android:checked="false"
+                android:onClick="onImageButtonClicked"/>
         <SurfaceView
                 android:id="@+id/surfaceView"
                 android:layout_width="1dp"
