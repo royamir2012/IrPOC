@@ -52,7 +52,7 @@ public class DialogManager {
     private AIService currentaiService;
 
     //
-    private MediaPlayer audioPlayer;
+    public AudioControl audioControl;
     //
     private Context context;
     //
@@ -64,6 +64,7 @@ public class DialogManager {
     //
     private int Mood;
     private int printCameraResults;
+    private boolean helpFromCamera;
 
 
     public DialogManager(Context context, AIListener listener, Handler messageHandler) {
@@ -89,9 +90,11 @@ public class DialogManager {
 
         this.context = context;
         this.messageHandler = messageHandler;
+
         Mood = MOOD_HAPPY;
         printCameraResults = NO_PRINT_CAMERA;
-        audioPlayer = null;
+        audioControl = new AudioControl(context);
+        helpFromCamera = false;
     }
 
 
@@ -119,41 +122,29 @@ public class DialogManager {
 
     public int getPrintCamera() { return printCameraResults;}
 
+    public void setHelpFromCamera() {helpFromCamera = true;}
 
-    private void playAudio() {
+    public void unSetHelpFromCamera() {helpFromCamera = false;}
 
-        try {
-            Thread.sleep(5000);                 // delay by 5000 milliseconds (5 seconds)
-        } catch(Exception e) {
-        }
-
-        Uri uri = Uri.parse("android.resource://" + this.context.getPackageName() + "/" + R.raw.booksample);
-        audioPlayer = audioPlayer.create(this.context,R.raw.booksample1);
-        audioPlayer.start();
-    }
-
-    private void stopAudio()
+    private Result updateFulfillment (String newText)
     {
-        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
-        {
-            audioPlayer.stop();
-        }
+        Result updatedResult = new Result();
+        Fulfillment updatedfulfillment = new Fulfillment();
+        updatedfulfillment.setSpeech(newText);
+        updatedResult.setFulfillment(updatedfulfillment);
+        return updatedResult;
     }
-    public void pauseAudio()
+    private RequestExtras updateAIContext() // TODO need to debug this code...
     {
-        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
-        {
-            audioPlayer.pause();
-        }
+        List<AIContext> contexts = new ArrayList<>();
+        contexts.add(new AIContext("playing grisham"));
+        contexts.add(new AIContext("startpodcast"));
+        contexts.add(new AIContext("play grisham"));
+        RequestExtras requestExtras = new RequestExtras(contexts, null);
+        requestExtras.setContexts(contexts);
+        return requestExtras;
     }
 
-    public void resumeAudio()
-    {
-        if ((audioPlayer != null)&&(audioPlayer.isPlaying()))
-        {
-            audioPlayer.start();
-        }
-    }
 
     public String sendRequestInternal(String input) {
 
@@ -165,15 +156,8 @@ public class DialogManager {
             {
                 String newInput = "help";
                 currentaiService = aiService_help;
-                stopAudio();
+                audioControl.pauseAudio(); // TODO what to do if never comes back...
                 response = currentaiService.textRequest(newInput, new RequestExtras());
-
-                // If all ok delete code below TODO: delete this code once ok
-                /*List<AIContext> contexts = new ArrayList<>();
-                contexts.add(new AIContext("ext-help"));
-                RequestExtras requestExtras = new RequestExtras(contexts, null);
-                requestExtras.setContexts(contexts);
-                currentaiService.textRequest("help",requestExtras);*/
             }
             if (response.getResult().getAction().equals("switch_to_normal"))
             {
@@ -181,8 +165,13 @@ public class DialogManager {
                 String newInput = "I'm back";
                 original_text = response.getResult().getFulfillment().getSpeech();
                 currentaiService = aiService_PodCast;
-                response = currentaiService.textRequest(newInput, new RequestExtras());
-
+                /*if (audioControl.isPaused())
+                {
+                    RequestExtras requestExtras = updateAIContext(); //TODO is the allocation for requestExtras correct?
+                    response = currentaiService.textRequest(newInput,requestExtras);
+                }
+                else*/ //TODO not sure this code is needed
+                    response = currentaiService.textRequest(newInput, new RequestExtras());
             }
             // reset agents and go back to podcast agent
             if (response.getResult().getAction().equals("reset-state"))
@@ -190,7 +179,7 @@ public class DialogManager {
                 currentaiService = aiService_PodCast;
                 currentaiService.resetContexts();
                 aiService_help.resetContexts(); // do for both agents
-                stopAudio();
+                audioControl.stopAudio();
 
             }
 
@@ -203,11 +192,7 @@ public class DialogManager {
                     switch (Mood)
                     {
                         case MOOD_HAPPY:
-                            Result updatedResult = new Result();
-                            Fulfillment updatedfullfillment = new Fulfillment();
-                            updatedfullfillment.setSpeech("You are always bored my friend... let's start and have some fun!");
-                            updatedResult.setFulfillment(updatedfullfillment);
-                            response.setResult(updatedResult);
+                            response.setResult(updateFulfillment("You are always bored my friend... let's start and have some fun!"));
                             break;
                         case MOOD_SAD:
                             break;
@@ -217,13 +202,28 @@ public class DialogManager {
 
                 }
 
+                if (response.getResult().getAction().equals("back_to_audio"))
+                {
+                    if (!helpFromCamera)
+                        original_text = "Glad to hear that!"; // We want to control the output based on the conversation flow. To overall the "eyes checked" one that is not relevant
+                    if (audioControl.isPaused())
+                    {
+                        response.setResult(updateFulfillment("I will continue playing the book"));
+                        audioControl.resumeAudio();
+                    }
+                }
+
                 if (response.getResult().getAction().equals("play-book"))
                 {
-                    playAudio();
+                    audioControl.playAudio();
                 }
                 if (response.getResult().getAction().equals("stop_book"))
                 {
-                    stopAudio();
+                    audioControl.stopAudio();
+                }
+                if (response.getResult().getAction().equals("pause_book"))
+                {
+                    audioControl.pauseAudio();
                 }
             }
             // suporting logic for the help agent
@@ -243,6 +243,10 @@ public class DialogManager {
 
                         System.out.println(e.toString());
                     }
+                }
+                if (response.getResult().getAction().equals("all_ok"))
+                {
+
                 }
             }
 
