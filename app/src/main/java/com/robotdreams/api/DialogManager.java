@@ -4,10 +4,7 @@ import java.util.*;
 
 import ai.api.model.*;
 import android.content.Context;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Handler;
 
 
@@ -15,9 +12,6 @@ import ai.api.AIConfiguration;
 import ai.api.AIListener;
 import ai.api.AIService;
 import ai.api.RequestExtras;
-import android.os.Message;
-import com.robotdreams.R;
-import com.robotdreams.ui.activity.BotActivity;
 
 /**
  *
@@ -36,8 +30,8 @@ public class DialogManager {
     private static final String CLIENT_ACCESS_TOKEN_PODCAST = "988545736d3c4b8c83dee67783abba4d";
     private static final String SUBSCRIPTION_KEY_PODCAST = "dc39a5a2-0ab8-4ac4-bb7b-67099d8c6064";
 
-    private static final int MOOD_SAD = 1;
-    private static final int MOOD_HAPPY = 2;
+    private static final int ATTITUDE_CYNIC = 1;
+    private static final int ATTITUDE_DISTANT = 2;
     public static final int PRINT_CAMERA = 1;
     public static final int NO_PRINT_CAMERA = 2;
 
@@ -64,7 +58,7 @@ public class DialogManager {
     private WolframAlphaAPI wolframAlphaAPI;
 
     //
-    private int Mood;
+    private int Attitude;
     private int printCameraResults;
     private boolean helpFromCamera;
 
@@ -93,7 +87,7 @@ public class DialogManager {
         this.context = context;
         this.messageHandler = messageHandler;
 
-        Mood = MOOD_HAPPY;
+        Attitude = ATTITUDE_DISTANT;
         printCameraResults = NO_PRINT_CAMERA;
         audioControl = new AudioControl(context);
         skypeControl = new skypeControl(context);
@@ -113,12 +107,13 @@ public class DialogManager {
     }
 
 
-    public void setMoodSad()
+    public void setAttitudeDistant()
     {
-        Mood = MOOD_SAD;
+        Attitude = ATTITUDE_CYNIC;
     }
 
-    public void setMoodHappy() {Mood = MOOD_HAPPY;}
+    public void setAttitudeCynic() {
+        Attitude = ATTITUDE_DISTANT;}
 
     public void setPrintCamera() { printCameraResults = PRINT_CAMERA;}
 
@@ -193,12 +188,12 @@ public class DialogManager {
             {
                 if (response.getResult().getAction().equals("elder-bored"))
                 {
-                    switch (Mood)
+                    switch (Attitude)
                     {
-                        case MOOD_HAPPY:
+                        case ATTITUDE_DISTANT:
                             response.setResult(updateFulfillment("You are always bored my friend... let's start and have some fun!"));
                             break;
-                        case MOOD_SAD:
+                        case ATTITUDE_CYNIC:
                             break;
                         default:
                             break;
