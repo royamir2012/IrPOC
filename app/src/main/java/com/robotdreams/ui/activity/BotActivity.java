@@ -3,11 +3,8 @@ package com.robotdreams.ui.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.AlertDialog;
-import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -18,7 +15,6 @@ import android.speech.tts.TextToSpeech;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -28,10 +24,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 import android.widget.RadioButton;
 import android.widget.ToggleButton;
-import android.widget.CompoundButton;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
@@ -115,7 +109,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         dialogManager = new DialogManager(this, this, messageHandler);
 
-        dialogManager.setMoodHappy(); // happy
+        dialogManager.setAttitudeCynic(); // happy
 
         drawingStartLocation = getIntent().getIntExtra(ARG_DRAWING_START_LOCATION, 0);
         if (savedInstanceState == null) {
@@ -391,13 +385,13 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
         // Check which radio button was clicked
         switch (view.getId()) {
-            case R.id.HappyradioButton:
+            case R.id.CynicradioButton:
                 if (checked)
-                    dialogManager.setMoodHappy();// MOOD_SAD
+                    dialogManager.setAttitudeCynic();
                 break;
-            case R.id.SadradioButton:
+            case R.id.DistantradioButton:
                 if (checked)
-                    dialogManager.setMoodSad();
+                    dialogManager.setAttitudeDistant();
                 break;
         }
     }
@@ -518,7 +512,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
 
         public void onEndOfSpeech() {
-                dialogManager.audioControl.resumeAudio();
+                dialogManager.audioControl.resumeAudioFromInputPause();
         }
 
         public void onError(int error) {
