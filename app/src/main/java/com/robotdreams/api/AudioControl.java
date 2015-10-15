@@ -72,24 +72,23 @@ public class AudioControl {
         isPausedForInput = true;
     }
 
+    public void resumeAudioFromInputPause()
+    {
+        if ((audioPlayer != null)&&((!isPaused)&&isPausedForInput)) // permanent pause do nothing
+        {
+            audioHandler.startAudioDelay(0); // 0 sec delay
+            //audioPlayer.start();
+        }
+        isPausedForInput = false;
+    }
     public void resumeAudio()
     {
-        if ((audioPlayer!= null)&&isPausedForInput) // temp pause resume only if no permanent pause
-        {
-            isPausedForInput = false; // init anyway for temp status
-            if(!isPaused) // no permanent pause
-            {
-                audioHandler.startAudioDelay(4000); // 4 sec delay
-                //audioPlayer.start();
-                isPaused = false;
-            }
-        }
-        else if ((audioPlayer != null)&&(isPaused)) // permanent pause
+        if ((audioPlayer != null)&&(isPaused)) // permanent pause
         {
             audioHandler.startAudioDelay(4000); // 4 sec delay
             //audioPlayer.start();
-            isPaused = false;
         }
+        isPaused = false;
     }
 
     public boolean isPaused() { return isPaused;}
