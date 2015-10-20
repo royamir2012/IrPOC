@@ -29,7 +29,7 @@ import android.widget.ToggleButton;
 
 import com.google.gson.JsonElement;
 import com.robotdreams.R;
-import com.robotdreams.api.CameraControl;
+import com.robotdreams.api.CamerasControl;
 import com.robotdreams.api.DialogManager;
 import com.robotdreams.ui.adapter.BotAdapter;
 import com.robotdreams.ui.view.SendRequestButton;
@@ -78,7 +78,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     private BotAdapter botAdapter;
     private int drawingStartLocation;
     private DialogManager dialogManager;
-    private CameraControl cameraControl;
+    private CamerasControl cameraControl;
     private String lastpicture;
 
     private Handler messageHandler = new Handler() {
@@ -88,7 +88,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
     };
 
 
-    SurfaceView surfaceView;
+    SurfaceView surfaceView; // for CamFind
+    SurfaceView surfaceView2; // for Affectiva
 
 
     @Override
@@ -101,10 +102,15 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         setupSendCommentButton();
         setupImageDemoButton();
 
-        surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+        surfaceView = (SurfaceView) findViewById(R.id.surfaceView); // can I use the same for two controls...?
+       // TODO affectiva surfaceView2 = (SurfaceView) findViewById(R.id.surfaceView2); // can I use the same for two controls...?
 
-        cameraControl = new CameraControl(messageHandler);
+        cameraControl = new CamerasControl(messageHandler, cameraControl.CONTROL_CAM_FIND); // control for cam find
         cameraControl.init(getApplicationContext(), surfaceView);
+
+        // TODO affectiva cameraControl2 = new CameraControl(messageHandler, cameraControl2.CONTROL_AFFECTIVA); // control for Affectiva
+        // TODO affectiva cameraControl2.init(getApplicationContext(), surfaceView2);
+
         lastpicture = null;
 
         dialogManager = new DialogManager(this, this, messageHandler);
@@ -427,6 +433,11 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
     }
 
+    public void onAffectivaButtonClicked(View view)
+    {
+        cameraControl.takePictures();
+    }
+
 
     @Override
     public void onListeningStarted() {
@@ -494,6 +505,10 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         }
         if (msg.sendingUid == 3) // TODO replace 3
             lastpicture = null;
+        if (msg.sendingUid == 4) // Affectiva
+        {
+            appendComment(BotAdapter.Type.Affectiva, msg.getData().getString("emotions"));
+        }
 
     }
 

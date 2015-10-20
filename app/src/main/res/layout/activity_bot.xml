@@ -29,6 +29,19 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
+        <!--<SurfaceView2
+                android:id="@+id/surfaceView2"
+                android:layout_width="2dp"
+                android:layout_height="1dp"
+                android:layout_weight="2" />
+        -->
+        <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/AffectivaButton" android:layout_gravity="right"
+                android:onClick="onAffectivaButtonClicked"
+                android:src="@drawable/emotions1"/>
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"

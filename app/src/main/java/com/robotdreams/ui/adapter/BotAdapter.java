@@ -28,7 +28,7 @@ import butterknife.InjectView;
 public class BotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public enum Type {
-        Voice, Camera
+        Voice, Camera, Affectiva
     }
 
     private Context context;
