@@ -1,6 +1,7 @@
 package com.robotdreams.api;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.os.Bundle;
@@ -29,6 +30,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
 
     volatile boolean running = false;
     volatile boolean takePictures = false;
+    int picPurpose = 0;
 
     Camera.PictureCallback jpegCallback1;
     Camera.PictureCallback jpegCallback2;
@@ -93,47 +95,57 @@ public class CamerasControl implements SurfaceHolder.Callback {
 
     private void initCameras() {
         // open the cameras and define usage
-        int numOfCameras = Camera.getNumberOfCameras();
-        int cameraTouse;
-        Camera camera; //local just to get hw info
-        if (camera1==null && camera2 == null) // not initilaized yed
-        {
-            for (cameraTouse = 0; cameraTouse < numOfCameras; cameraTouse++) {
-                CameraInfo cameraInfo = new CameraInfo();
-                Camera.Parameters param;
-                camera = Camera.open(cameraTouse);
-                camera.getCameraInfo(cameraTouse, cameraInfo);
-                camera.release();
+        try {
 
-                if (cameraInfo.facing == cameraInfo.CAMERA_FACING_BACK) {
-                    cam1purpose = CONTROL_CAM_FIND; // for now back camera goes to cam find
-                    camera1 = Camera.open(cameraTouse);
-                    param = camera1.getParameters();
-                    // TODO modify parameter
+            int numOfCameras = Camera.getNumberOfCameras();
+            int cameraTouse;
+            Camera camera; //local just to get hw info
+            if (camera1 == null && camera2 == null) // not initilaized yed
+            {
+                for (cameraTouse = 0; cameraTouse < numOfCameras; cameraTouse++) {
+                    CameraInfo cameraInfo = new CameraInfo();
+                    Camera.Parameters param;
+                    camera = Camera.open(cameraTouse);
+                    camera.getCameraInfo(cameraTouse, cameraInfo);
+                    camera.release();
+
+                    if (cameraInfo.facing == cameraInfo.CAMERA_FACING_BACK) {
+                        cam1purpose = CONTROL_CAM_FIND; // for now back camera goes to cam find
+                        camera1 = Camera.open(cameraTouse);
+                        param = camera1.getParameters();
+                        // TODO modify parameter
                     /*
                     param.setPreviewSize(20, 20);
                     param.setJpegQuality(60);
                     */
-                    camera1.setParameters(param);
-                }
-                if (cameraInfo.facing == cameraInfo.CAMERA_FACING_FRONT) {
-                    cam2purpose = CONTROL_AFFECTIVA; // for now front camera goes to affectiva
-                    camera2 = Camera.open(cameraTouse);
-                    param = camera2.getParameters();
+                        camera1.setParameters(param);
+                    }
+                    if (cameraInfo.facing == cameraInfo.CAMERA_FACING_FRONT) {
+                        cam2purpose = CONTROL_AFFECTIVA; // for now front camera goes to affectiva
+                        camera2 = Camera.open(cameraTouse);
+                        param = camera2.getParameters();
+                        param.setPictureSize(200, 400); // w , h
+                        param.setPictureFormat(ImageFormat.NV21);
 
-                    // TODO modify parameter
+                        // TODO modify parameter
                     /*
                     param.setPreviewSize(20, 20);
                     param.setJpegQuality(60);
                     */
-                    camera2.setParameters(param);
+                        camera2.setParameters(param);
+                    }
                 }
             }
         }
+        catch (Exception e)
+        {
+            System.out.println("camera Init failed" + e.toString());
+        }
     }
 
-    public void takePictures() {
+    public void takePictures(int purpose) {
         takePictures = true;
+        this.picPurpose = purpose;
     }
 
     public void captureImage(int purpose) throws IOException {
@@ -172,13 +184,14 @@ public class CamerasControl implements SurfaceHolder.Callback {
 
         } catch (Throwable e) {
 
-            System.out.println(e.toString());
+            System.out.println("Handle image failed" + e.toString());
         }
     }
 
     public void refreshCamera() { // for now we assume one camera at a time is being used!!
         if (surfaceHolder.getSurface() == null) {
             // preview surface does not exist
+            System.out.println("preview surface does not exist");
             return;
         }
 
@@ -188,6 +201,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
             camera2.stopPreview();
         } catch (Exception e) {
             // ignore: tried to stop a non-existent preview
+            System.out.println("Stop preview failed in refresh camera" + e.toString());
         }
 
         // set preview size and make any resize, rotate or
@@ -199,6 +213,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
             camera2.setPreviewDisplay(surfaceHolder);
             camera2.startPreview();
         } catch (Exception e) {
+            System.out.println("Refresh camera failed set preview" + e.toString());
         }
     }
 
@@ -231,7 +246,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
             initCameras();
         } catch (RuntimeException e) {
             // check for exceptions
-            System.err.println(e);
+            System.err.println("init cameras in surface created" + e);
             return;
         }
 
@@ -244,7 +259,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
             // camera2.startPreview(); do I need both startPreview when using the same surface?
         } catch (Exception e) {
             // check for exceptions
-            System.err.println(e);
+            System.err.println("set preview in surface created" + e);
             return;
         }
 
@@ -255,7 +270,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
         try {
             takePicturesThread.join();
         } catch (Exception e) {
-
+            System.out.println("Surface destroyed" + e.toString());
         }
         // stop preview and release camera
         camera1.stopPreview();
@@ -280,39 +295,44 @@ public class CamerasControl implements SurfaceHolder.Callback {
                     try {
                         Thread.sleep(1000);
                     } catch (Exception e) {
+                        System.out.println("take pictures failed" + e.toString());
                     }
                 }
 
                 if (takePictures) {
-                    if (camera1 != null)
-                    {
-                        if (cam1purpose == CONTROL_CAM_FIND) // for now cam1 goes to camfind
+                    if ( picPurpose == CONTROL_CAM_FIND)
+                        if (camera1 != null)
                         {
-                            for (int i = 0; running && i < 2; i++) {
-                                try {
-                                    captureImage(CONTROL_CAM_FIND);
-                                    Thread.sleep(10000);
-                                } catch (Exception e) {
+                            if (cam1purpose == CONTROL_CAM_FIND) // for now cam1 goes to camfind
+                            {
+                                for (int i = 0; running && i < 2; i++) {
+                                    try {
+                                        captureImage(CONTROL_CAM_FIND);
+                                        Thread.sleep(10000);
+                                    } catch (Exception e) {
+                                        System.out.println("take pictures cam1" + e.toString());
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (camera2 != null)
-                    {
-                        if (cam2purpose == CONTROL_AFFECTIVA)
+                    if ( picPurpose == CONTROL_AFFECTIVA)
+                        if (camera2 != null)
                         {
+                            if (cam2purpose == CONTROL_AFFECTIVA)
+                            {
 
-                            affectivaControl.detector.start();
-                            for (int i = 0; running && i < 10; i++) {
-                                try {
-                                    captureImage(CONTROL_AFFECTIVA);
-                                    affectivaPics++;
-                                    Thread.sleep(500);
-                                } catch (Exception e) {
+                                affectivaControl.detector.start();
+                                for (int i = 0; running && i < 10; i++) {
+                                    try {
+                                        captureImage(CONTROL_AFFECTIVA);
+                                        affectivaPics++;
+                                        Thread.sleep(500);
+                                    } catch (Exception e) {
+                                        System.out.println("take pictures cam2" + e.toString());
+                                    }
                                 }
                             }
                         }
-                    }
                     takePictures = false;
                 }
             }
