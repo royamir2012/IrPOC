@@ -86,27 +86,33 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
     private void InitializePhotoDetector(){
         AssetManager assetMgr = context.getAssets();
         try {
-            final InputStream stream = assetMgr.open("affectiva.license");
 
+
+            detector = new PhotoDetector(this.context);
+            // update the license path here if you name your file something else
+            detector.setLicensePath("affectiva.license");
+            detector.setImageListener(this);
+            detector.setFaceListener(this);
+
+            detector.setDetectAllEmotions(true);
         }
         catch (Exception e)
         {
-
+            System.out.println("Init photo detector Affectiva" + e.toString());
         }
-
-        detector = new PhotoDetector(this.context);
-        // update the license path here if you name your file something else
-        detector.setLicensePath("affectiva.license");
-        detector.setImageListener(this);
-        detector.setFaceListener(this);
-
-        detector.setDetectAllEmotions(true);
     }
 
     public void AffectivaProcessImage(byte[] data)
     {
-        Frame.ByteArrayFrame frame = new Frame.ByteArrayFrame(data, 200, 400, Frame.COLOR_FORMAT.RGBA ); // TODO get real params
-        detector.process(frame);
+        try {
+            Frame.ByteArrayFrame frame = new Frame.ByteArrayFrame(data, 200, 400, Frame.COLOR_FORMAT.UNKNOWN_TYPE ); // TODO get real params
+            detector.process(frame);
+        }
+        catch (Exception e)
+        {
+            System.out.println("Affectiva process image" + e.toString());
+        }
+
     }
 
     @Override
