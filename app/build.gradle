@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'hugo'
-
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
@@ -32,10 +31,8 @@ android {
         exclude 'META-INF/LGPL2.1'
     }
 }
-
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-
     // api.ai SDK
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile 'com.android.support:support-v13:22.2.0'
@@ -58,3 +55,5 @@ dependencies {
     compile 'ai.api:sdk:1.7.0@aar'
 }
 
+repositories {
+}
