@@ -191,7 +191,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
             @Override
             public void onClick(View v) {
-                cameraControl.takePictures();
+                cameraControl.takePictures(cameraControl.CONTROL_CAM_FIND);
             }
         });
     }
@@ -435,7 +435,7 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
 
     public void onAffectivaButtonClicked(View view)
     {
-        cameraControl.takePictures();
+        cameraControl.takePictures(CamerasControl.CONTROL_AFFECTIVA);
     }
 
 
