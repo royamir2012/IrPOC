@@ -508,6 +508,8 @@ public class BotActivity extends BaseActivity implements SendRequestButton.OnSen
         if (msg.sendingUid == 4) // Affectiva
         {
             appendComment(BotAdapter.Type.Affectiva, msg.getData().getString("emotions"));
+            if (cameraControl.affectivaControl.takeOneMore())
+                cameraControl.takePictures(CamerasControl.CONTROL_AFFECTIVA);
         }
 
     }

@@ -232,7 +232,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
             {
                 affectivaControl.AffectivaProcessImage(data, mCam2Width, mCam2Height); // affectiva uses cam2
                 Log.d("app", "Affectiva process"+affectivaPics);
-                affectivaPics--;
+                //affectivaPics--;
                 //if (affectivaPics == 0)
                   //  affectivaControl.detector.stop();
             }
@@ -401,7 +401,7 @@ public class CamerasControl implements SurfaceHolder.Callback {
                                 for (int i = 0; running && i < 1; i++) {
                                     try {
                                         captureImage(CONTROL_AFFECTIVA);
-                                        affectivaPics++;
+                                        //affectivaPics++;
                                         Thread.sleep(200);
                                     } catch (Exception e) {
                                         System.out.println("take pictures cam2" + e.toString());

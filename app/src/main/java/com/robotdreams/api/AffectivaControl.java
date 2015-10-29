@@ -183,6 +183,13 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
         }
     }
 
+    public boolean takeOneMore()
+    {
+        if ( photo_num < 10 )
+            return true;
+        else
+            return false;
+    }
 
     @Override
     public void onFaceDetectionStarted()
@@ -222,32 +229,36 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
     {
          if (faces == null)
             return; //frame was not processed
-        if (faces.size() == 0)
-            return; //no face found
-
         String emotions = "So...";
-        Face face = faces.get(0); //Currently, the SDK only detects one face at a time
-//Some Emotions
-        float joy = face.emotions.getJoy();
-        float anger = face.emotions.getAnger();
-        float disgust = face.emotions.getDisgust();
-//Some Expressions
-        float smile = face.expressions.getSmile();
-        float brow_furrow = face.expressions.getBrowFurrow();
-        float brow_raise = face.expressions.getBrowRaise();
-//Measurements
-        float interocular_distance = face.measurements.getInterocularDistance();
-        float yaw = face.measurements.orientation.getYaw();
-        float roll = face.measurements.orientation.getRoll();
-        float pitch = face.measurements.orientation.getPitch();
+        if (faces.size() == 0) // no face found
+        {
+            emotions = emotions.concat("no face detected");
+        }
+        else {
 
-        if ( joy > 0.50 )
-            emotions = emotions.concat("joy is above 50%");
-        if ( anger > 30 )
-            emotions = emotions.concat("anger is above 30%");
-        if ( disgust > 50 )
-            emotions = emotions.concat("disgust is above 50%");
-        //emotions = emotions.concat("joy is" + joy + "anger is" + anger + "disgust is" + disgust);
+            Face face = faces.get(0); //Currently, the SDK only detects one face at a time
+//Some Emotions
+            float joy = face.emotions.getJoy();
+            float anger = face.emotions.getAnger();
+            float disgust = face.emotions.getDisgust();
+//Some Expressions
+            float smile = face.expressions.getSmile();
+            float brow_furrow = face.expressions.getBrowFurrow();
+            float brow_raise = face.expressions.getBrowRaise();
+//Measurements
+            float interocular_distance = face.measurements.getInterocularDistance();
+            float yaw = face.measurements.orientation.getYaw();
+            float roll = face.measurements.orientation.getRoll();
+            float pitch = face.measurements.orientation.getPitch();
+
+            if (joy > 0.50)
+                emotions = emotions.concat("joy is above 50%");
+            if (anger > 30)
+                emotions = emotions.concat("anger is above 30%");
+            if (disgust > 50)
+                emotions = emotions.concat("disgust is above 50%");
+            //emotions = emotions.concat("joy is" + joy + "anger is" + anger + "disgust is" + disgust);
+        }
 
         // TODO send to "UI" queue
         System.out.println(emotions);
