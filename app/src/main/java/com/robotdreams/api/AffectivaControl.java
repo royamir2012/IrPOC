@@ -1,19 +1,28 @@
 package com.robotdreams.api;
 
 import java.io.InputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.Object;
 import java.util.List;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Environment;
+import android.widget.Toast;
+import android.util.Log;
+
 import com.affectiva.android.affdex.sdk.Frame;
 import com.affectiva.android.affdex.sdk.detector.CameraDetector;
 import com.affectiva.android.affdex.sdk.detector.Detector;
 import com.affectiva.android.affdex.sdk.detector.Face;
 import com.affectiva.android.affdex.sdk.detector.PhotoDetector;
+
 
 /**
  * Created by itaimendelsohn on 10/15/15.
@@ -26,6 +35,7 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
     public CameraDetector cameraDetector;
     public PhotoDetector detector;
 
+    private int photo_num = 0;
 
     //Camera-related variables in case we switch to camera mode
     private boolean isFrontFacingCameraDetected;
@@ -102,18 +112,77 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
         }
     }
 
-    public void AffectivaProcessImage(byte[] data)
+    private void startDetector() {
+        if (!detector.isRunning()) {
+            try {
+                detector.start();
+            } catch (Exception e) {
+                Log.e("app","Affectiva" + e.getMessage());
+            }
+        }
+    }
+
+    private void stopDetector() {
+        if (detector.isRunning()) {
+            try {
+                detector.stop();
+            } catch (Exception e) {
+                Log.e("app","Affectiva" + e.getMessage());
+            }
+        }
+    }
+
+    public void AffectivaProcessImage(byte[] data, int width, int height)
     {
+        new AffectivaAnalyzePictures(data, width, height).start(); // move this to a separated process as the UI one can't hang that long
+    }
+
+    public void AffectivaAnalyzePictures (byte[] data, int width, int height)
+    {
+        Log.d("app","Affectiva thread is" + android.os.Process.myTid());
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        if ( photo_num < 10 )
+            photo_num++;
+        else
+            photo_num = 1;
+
+        String file = "affectiva"+photo_num+".jpg";
+        File photo=new File(path, file);
+
+        if (photo.exists()) {
+            photo.delete();
+        }
         try {
-            Frame.ByteArrayFrame frame = new Frame.ByteArrayFrame(data, 200, 400, Frame.COLOR_FORMAT.UNKNOWN_TYPE ); // TODO get real params
-            detector.process(frame);
+            FileOutputStream fos=new FileOutputStream(photo.getPath());
+
+            fos.write(data);
+            fos.close();
+        }
+        catch (java.io.IOException e) {
+            Log.e("PictureDemo", "Exception in affectiva analyze pic save to file", e);
+        }
+
+        try {
+            BitmapFactory.Options opt = new BitmapFactory.Options();
+            //opt.inDither = true;
+            opt.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap bitMap = BitmapFactory.decodeByteArray(data, 0,data.length,opt);
+            if (bitMap != null)
+            {
+                Frame.BitmapFrame frame1 = new Frame.BitmapFrame(bitMap,Frame.COLOR_FORMAT.RGBA);
+                //Frame.ByteArrayFrame frame = new Frame.ByteArrayFrame(data,width ,height, Frame.COLOR_FORMAT.UNKNOWN_TYPE ); // TODO get real params
+                startDetector();
+                detector.process(frame1);
+                stopDetector();
+                //bitMap.recycle(); do we need to free the bitmap..? or it will cause trouble to affectiva sdk
+            }
         }
         catch (Exception e)
         {
             System.out.println("Affectiva process image" + e.toString());
         }
-
     }
+
 
     @Override
     public void onFaceDetectionStarted()
@@ -151,12 +220,12 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
     @Override
     public void onImageResults(List<Face> faces, Frame frame, float timestamp)
     {
-        if (faces == null)
+         if (faces == null)
             return; //frame was not processed
         if (faces.size() == 0)
             return; //no face found
 
-        String emotions = "";
+        String emotions = "So...";
         Face face = faces.get(0); //Currently, the SDK only detects one face at a time
 //Some Emotions
         float joy = face.emotions.getJoy();
@@ -172,13 +241,13 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
         float roll = face.measurements.orientation.getRoll();
         float pitch = face.measurements.orientation.getPitch();
 
-        /*if ( joy < 50 )
-            emotions.concat("joy");
-        if ( anger < 50 )
-            emotions.concat("anger");
-        if ( disgust < 50 )
-            emotions.concat("disgust"); for later*/
-        emotions.concat("joy is" + joy + "anger is" + anger + "disgust is" + disgust);
+        if ( joy > 0.50 )
+            emotions = emotions.concat("joy is above 50%");
+        if ( anger > 30 )
+            emotions = emotions.concat("anger is above 30%");
+        if ( disgust > 50 )
+            emotions = emotions.concat("disgust is above 50%");
+        //emotions = emotions.concat("joy is" + joy + "anger is" + anger + "disgust is" + disgust);
 
         // TODO send to "UI" queue
         System.out.println(emotions);
@@ -192,4 +261,23 @@ public class AffectivaControl implements PhotoDetector.ImageListener, PhotoDetec
         messageHandler.dispatchMessage(message);
 
     }
+
+    class AffectivaAnalyzePictures extends Thread {
+
+        byte[] data;
+        int width;
+        int height;
+
+        AffectivaAnalyzePictures(byte[] data, int width, int height) {
+            this.data = data;
+            this.width = width;
+            this.height = height;
+        }
+
+        public void run() {
+            AffectivaAnalyzePictures(data, width, height);
+        }
+    }
+
+
 }

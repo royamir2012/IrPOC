@@ -10,8 +10,10 @@ import android.os.Message;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
+import android.util.Log;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by assaf_000 on 10/10/2015.
@@ -27,6 +29,10 @@ public class CamerasControl implements SurfaceHolder.Callback {
     Camera camera2=null;
     int cam1purpose = 0;
     int cam2purpose = 0;
+    int mCam1Width;
+    int mCam1Height;
+    int mCam2Width;
+    int mCam2Height;
 
     volatile boolean running = false;
     volatile boolean takePictures = false;
@@ -93,6 +99,46 @@ public class CamerasControl implements SurfaceHolder.Callback {
         takePicturesThread.start();
     }
 
+    private Camera.Parameters setImageSizes(int purpose, Camera.Parameters params)
+    {
+        List sizes = params.getSupportedPictureSizes();
+
+        if (purpose == CONTROL_AFFECTIVA )
+        {
+            Camera.Size camSize;
+            for ( int i = 0; i < sizes.size(); i++)
+            {
+                camSize = (Camera.Size) sizes.get(i);
+
+                if ( camSize.width == camSize.height) // for now we assume Affective needs a square
+                {
+                    mCam2Height = camSize.height; // Affectiva uses cam2Control
+                    mCam2Width = camSize.width;
+                    break;
+                }
+            }
+            params.setPictureSize(mCam2Width, mCam2Height); // w , h
+            params.setPreviewSize(mCam2Width, mCam2Height);
+        }
+        if (purpose == CONTROL_CAM_FIND) // we are looking for the smallest size for Cam Find
+        {
+            Camera.Size camSize1 = (Camera.Size) sizes.get(0); // first in the list
+            Camera.Size camSize2 = (Camera.Size) sizes.get(sizes.size()-1); // last one in the list
+            if (camSize1.height < camSize2.height) { // first is the smallest
+                mCam1Height = camSize1.height;
+                mCam1Width = camSize1.width;
+            }
+            else {
+                mCam1Height = camSize2.height;
+                mCam1Width = camSize2.width;
+            }
+            params.setPictureSize(mCam1Width, mCam1Height); // w , h
+            params.setPreviewSize(mCam1Width, mCam1Height);
+        }
+
+        return params;
+}
+
     private void initCameras() {
         // open the cameras and define usage
         try {
@@ -113,9 +159,9 @@ public class CamerasControl implements SurfaceHolder.Callback {
                         cam1purpose = CONTROL_CAM_FIND; // for now back camera goes to cam find
                         camera1 = Camera.open(cameraTouse);
                         param = camera1.getParameters();
+                        param = setImageSizes(CONTROL_CAM_FIND,param); //set image sizes
                         // TODO modify parameter
                     /*
-                    param.setPreviewSize(20, 20);
                     param.setJpegQuality(60);
                     */
                         camera1.setParameters(param);
@@ -124,8 +170,16 @@ public class CamerasControl implements SurfaceHolder.Callback {
                         cam2purpose = CONTROL_AFFECTIVA; // for now front camera goes to affectiva
                         camera2 = Camera.open(cameraTouse);
                         param = camera2.getParameters();
-                        param.setPictureSize(200, 400); // w , h
-                        param.setPictureFormat(ImageFormat.NV21);
+                        param = setImageSizes(CONTROL_AFFECTIVA,param); //set image sizes
+                        List formats = camera2.getParameters().getSupportedPictureFormats();
+                        for (int i =0; i < formats.size();i++)
+                        {
+                            if (formats.get(i).equals(ImageFormat.NV21))
+                                param.setPictureFormat(ImageFormat.NV21);
+                        }
+                        param.setRotation(270);
+                        camera2.setDisplayOrientation(270);
+                        //param.setPictureFormat(ImageFormat.NV21);
 
                         // TODO modify parameter
                     /*
@@ -176,10 +230,11 @@ public class CamerasControl implements SurfaceHolder.Callback {
             }
             if (purpose == CONTROL_AFFECTIVA)
             {
-                affectivaControl.AffectivaProcessImage(data);
+                affectivaControl.AffectivaProcessImage(data, mCam2Width, mCam2Height); // affectiva uses cam2
+                Log.d("app", "Affectiva process"+affectivaPics);
                 affectivaPics--;
-                if (affectivaPics == 0)
-                    affectivaControl.detector.stop();
+                //if (affectivaPics == 0)
+                  //  affectivaControl.detector.stop();
             }
 
         } catch (Throwable e) {
@@ -197,8 +252,10 @@ public class CamerasControl implements SurfaceHolder.Callback {
 
         // stop preview before making changes
         try {
-            camera1.stopPreview();
-            camera2.stopPreview();
+            if (camera1 != null)
+                camera1.stopPreview();
+            if ( camera2 != null)
+                camera2.stopPreview();
         } catch (Exception e) {
             // ignore: tried to stop a non-existent preview
             System.out.println("Stop preview failed in refresh camera" + e.toString());
@@ -208,10 +265,17 @@ public class CamerasControl implements SurfaceHolder.Callback {
         // reformatting changes here
         // start preview with new settings
         try {
-            camera1.setPreviewDisplay(surfaceHolder);
-            camera1.startPreview();
-            camera2.setPreviewDisplay(surfaceHolder);
-            camera2.startPreview();
+            if ( camera1 != null)
+            {
+                camera1.setPreviewDisplay(surfaceHolder);
+                camera1.startPreview();
+            }
+            if ( camera2 != null)
+            {
+                camera2.setPreviewDisplay(surfaceHolder);
+                camera2.startPreview();
+            }
+
         } catch (Exception e) {
             System.out.println("Refresh camera failed set preview" + e.toString());
         }
@@ -253,10 +317,17 @@ public class CamerasControl implements SurfaceHolder.Callback {
         try {
             // The Surface has been created, now tell the camera where to draw
             // the preview.
-            camera1.setPreviewDisplay(holder);
-            camera1.startPreview();
-            camera2.setPreviewDisplay(holder);
-            // camera2.startPreview(); do I need both startPreview when using the same surface?
+            if ( camera1 != null)
+            {
+                camera1.setPreviewDisplay(holder);
+                camera1.startPreview();
+            }
+            if ( camera2 != null)
+            {
+                camera2.setPreviewDisplay(holder);
+                if (camera1 == null) // if not called in cam1
+                    camera2.startPreview(); // do I need both startPreview when using the same surface?
+            }
         } catch (Exception e) {
             // check for exceptions
             System.err.println("set preview in surface created" + e);
@@ -273,15 +344,20 @@ public class CamerasControl implements SurfaceHolder.Callback {
             System.out.println("Surface destroyed" + e.toString());
         }
         // stop preview and release camera
-        camera1.stopPreview();
-        camera1.release();
-        camera1 = null;
-        cam1purpose = 0;
-        camera2.stopPreview();
-        camera2.release();
-        camera2 = null;
-        cam2purpose = 0;
-
+        if (camera1 != null)
+        {
+            camera1.stopPreview();
+            camera1.release();
+            camera1 = null;
+            cam1purpose = 0;
+        }
+        if (camera2 != null)
+        {
+            camera2.stopPreview();
+            camera2.release();
+            camera2 = null;
+            cam2purpose = 0;
+        }
     }
 
 
@@ -321,12 +397,12 @@ public class CamerasControl implements SurfaceHolder.Callback {
                             if (cam2purpose == CONTROL_AFFECTIVA)
                             {
 
-                                affectivaControl.detector.start();
-                                for (int i = 0; running && i < 10; i++) {
+                                //affectivaControl.detector.start();
+                                for (int i = 0; running && i < 1; i++) {
                                     try {
                                         captureImage(CONTROL_AFFECTIVA);
                                         affectivaPics++;
-                                        Thread.sleep(500);
+                                        Thread.sleep(200);
                                     } catch (Exception e) {
                                         System.out.println("take pictures cam2" + e.toString());
                                     }
